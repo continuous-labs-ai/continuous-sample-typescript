@@ -1,0 +1,18 @@
+{
+  // This sample runs directly with tsx (`npm run worker`); tsc is used only for
+  // type-checking (`npm run typecheck`). NodeNext matches how Node resolves ESM
+  // at runtime and how @continuous/sdk is published, so relative imports use
+  // explicit .js extensions.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts"]
+}

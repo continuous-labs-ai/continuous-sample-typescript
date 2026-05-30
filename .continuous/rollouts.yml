@@ -1,0 +1,23 @@
+plans:
+  # Operator-supervised ramp. With a 30-minute bake per stage, the canary waits
+  # for live judgments before each gate — but an operator can `advance`, `pause`,
+  # or `rollback` at any time (operator actions override a pending bake, 0004 §11).
+  - name: ramp
+    judge: evals/judge.md
+    bake: 30m
+    stages:
+      - 10
+      - 25
+      - 50
+      - 100
+
+  # Fast ramp for an autonomous-canary demo: 2-minute bakes so the Canary Agent
+  # gates on real traffic quickly. Pair with `python -m support_agent simulate`.
+  - name: ramp-fast
+    judge: evals/judge.md
+    bake: 2m
+    stages:
+      - 10
+      - 25
+      - 50
+      - 100

@@ -1,0 +1,7 @@
+# Variant v2 — the candidate promoted in the CD rollout demo (v1 → v2).
+# Stronger model and a sharper prompt. Better tone and reasoning than v1, but
+# still has no access to Acme's proprietary policy, so it can still get exact
+# specifics wrong.
+model: claude-sonnet-4-6
+prompt: prompt.md
+skills: []

@@ -1,0 +1,6 @@
+# Variant v1 — the baseline. Cheap, fast model and a terse prompt, no skill.
+# It answers billing questions from generic knowledge, so it tends to invent
+# plausible-but-wrong specifics (e.g. a "30-day refund").
+model: claude-haiku-4-5-20251001
+prompt: prompt.md
+skills: []

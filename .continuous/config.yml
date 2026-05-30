@@ -1,0 +1,21 @@
+agents:
+  - name: support-agent
+    variants:
+      # Each variant is a full model × prompt × skill composition. The `paths`
+      # globs scope CI: a variant's eval cell re-runs only when a PR's diff
+      # touches that variant's files (0002 §3.1, on:change).
+      - name: v1
+        paths:
+          - "agent/variants/v1/**"
+      - name: v2
+        paths:
+          - "agent/variants/v2/**"
+
+evals:
+  - name: billing-support
+    agent: support-agent
+    dataset: evals/support.jsonl
+    judge: evals/judge.md
+    on: change
+    dispatch: auto
+    block_pr: true
