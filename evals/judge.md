@@ -1,25 +1,24 @@
 # Billing-support judge rubric
 
-You are grading a customer-support reply from Acme's support agent. Compare the
-agent's answer (the trajectory) against the **Expected Output** and the customer
+You are grading whether Acme's support agent took the **correct support action**
+— gave the customer the right, complete resolution to their request. Compare the
+agent's reply (the trajectory) against the **Expected Output** and the customer
 question (the **Task Input**).
 
-Score on a continuous [0.0, 1.0] scale:
+Score is **binary** — return exactly **1.0** or **0.0**, never anything in
+between:
 
-- **1.0** — The answer states the correct policy outcome and the key specifics
-  match the Expected Output (e.g. the right refund window, proration direction,
-  trial length, or who gets credited). Tone is professional and the next step is
-  clear.
-- **0.7** — Correct overall outcome, but a specific detail is vague, missing, or
-  slightly off (e.g. right that it's non-refundable but doesn't mention the
-  14-day window).
-- **0.4** — Partially right: the answer is on-topic and not harmful, but gets a
-  material specific wrong or hedges so much it wouldn't resolve the ticket.
-- **0.0** — States an incorrect policy (e.g. promises a refund that policy
-  doesn't allow, quotes the wrong refund window or trial length), or contradicts
-  the Expected Output.
+- **1.0** — Task accomplished: the reply states the correct outcome **and** every
+  key specific matches the Expected Output (the right refund window, proration
+  direction, trial length, who gets credited, etc.). Minor wording differences
+  are fine as long as no material specific is wrong or missing.
+- **0.0** — Task not accomplished: an incorrect policy, a wrong or missing
+  material specific (e.g. the wrong refund window or trial length), a
+  contradiction of the Expected Output, or an answer so vague it wouldn't
+  resolve the ticket.
 
-Reward answers that commit to Acme's actual policy specifics over generic,
-plausible-sounding guesses. An answer that invents a common-but-wrong policy
-(for example a "30-day money-back guarantee" when the real window is 14 days)
-should score 0.0 even if it sounds confident and helpful.
+Do not award partial credit. Reward answers that commit to Acme's actual policy
+specifics over generic, plausible-sounding guesses: an answer that invents a
+common-but-wrong policy (for example a "30-day money-back guarantee" when the
+real window is 14 days) scores 0.0 even if it sounds confident and helpful. When
+in doubt, score 0.0 — only a fully correct answer earns 1.0.
