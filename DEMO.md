@@ -179,7 +179,8 @@ continuous eval billing-support        # pushes a temp ref, dispatches, tails SS
 continuous eval                        # all declared evals
 ```
 
-`evals/tone.*` is a second worked example of authoring one.
+`evals/escalation.*` is a second worked example — it scores whether the agent
+escalates the right requests and handles the routine ones.
 
 ---
 
@@ -192,18 +193,19 @@ continuous eval                        # all declared evals
    gh pr create --base main --head add-v3-billing-skill --title "Add v3: billing-policy skill" -F .github/PR_BODY_v3.md
    ```
 3. Continuous posts a **check-run** + a **PR comment**: one table per agent —
-   **rows = evals (`billing-support`, `tone`), columns = variants (v1,v2,v3)** — each
+   **rows = evals (`billing-support`, `escalation`), columns = variants (v1,v2,v3)** — each
    cell a checkbox `<!-- continuous:dispatch:<eval>:<variant> -->` (0002 §7). Nothing
    runs until you tick.
 4. **Select which eval to run:** tick e.g. `billing-support × v3` (+ a baseline
    column for the delta), or a shortcut row/column/corner to batch. Continuous
    dispatches that `(eval, variant)` Task to the worker, judges server-side, and
    rewrites the cell to `✓ pass [↗](trajectory)` / `✗ fail` with the score.
-   - `billing-support` (`block_pr: true`) gates the merge; `tone` (`block_pr: false`)
+   - `billing-support` (`block_pr: true`) gates the merge; `escalation` (`block_pr: false`)
      is advisory.
 
-**Expected:** v3 wins `billing-support` over v1/v2 (the skill earns its place); `tone`
-stays flat. Merge unblocks once the blocking cells pass. If a cell hangs "awaiting,"
+**Expected:** v3 wins `billing-support` over v1/v2 (the skill earns its place);
+`escalation` stays flat (the skill doesn't change escalation judgment). Merge
+unblocks once the blocking cells pass. If a cell hangs "awaiting,"
 the worker's `CONTINUOUS_GIT_SHA` ≠ the PR head SHA (queue mismatch).
 
 ---

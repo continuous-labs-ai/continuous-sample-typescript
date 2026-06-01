@@ -94,9 +94,9 @@ on-demand-dispatch CI flow, and the staged CD rollout — lives in
 .continuous/rollouts.yml      # CD ramp plans
 agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
 evals/support.jsonl           # primary eval dataset: {name, input, expected_output}
-evals/judge.md                # the support rubric Continuous scores against
-evals/tone.jsonl              # second, non-blocking eval (tone)
-evals/tone-judge.md           # the tone rubric
+evals/judge.md                # support rubric: did the agent take the correct action? (binary)
+evals/escalation.jsonl        # second, non-blocking eval: escalate-vs-handle scenarios
+evals/escalation-judge.md     # escalation rubric: did the agent escalate correctly? (binary)
 src/                          # the worker (CI) + simulator (CD)
 #
 # On the pre-staged add-v3-billing-skill branch (the CI demo):
