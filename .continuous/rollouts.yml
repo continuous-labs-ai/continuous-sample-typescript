@@ -12,7 +12,7 @@ plans:
       - 100
 
   # Fast ramp for an autonomous-canary demo: 2-minute bakes so the Canary Agent
-  # gates on real traffic quickly. Pair with `python -m support_agent simulate`.
+  # gates on real traffic quickly. Pair with `npm run simulate`.
   - name: ramp-fast
     judge: evals/judge.md
     bake: 2m

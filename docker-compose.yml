@@ -10,9 +10,8 @@ services:
       dockerfile: continuous-sample-typescript/Dockerfile
     env_file: .env
     environment:
-      # The SDK reads CONTINUOUS_API_KEY; .env stores the worker key under
-      # CONTINUOUS_WORKER_KEY.
-      CONTINUOUS_API_KEY: ${CONTINUOUS_WORKER_KEY:-}
+      # The SDK authenticates with the worker key via CONTINUOUS_API_KEY (.env).
+      CONTINUOUS_API_KEY: ${CONTINUOUS_API_KEY:-}
       # Preview/production deploy: set to the PR head SHA for the CI demo so the
       # worker lands on queue sha:<head_sha>. Tilt sets this from `git_sha`.
       CONTINUOUS_GIT_SHA: ${CONTINUOUS_GIT_SHA:?set CONTINUOUS_GIT_SHA to the deploy/PR head SHA}
@@ -27,6 +26,6 @@ services:
       dockerfile: continuous-sample-typescript/Dockerfile
     env_file: .env
     environment:
-      CONTINUOUS_API_KEY: ${CONTINUOUS_WORKER_KEY:-}
+      CONTINUOUS_API_KEY: ${CONTINUOUS_API_KEY:-}
     command: ["npm", "run", "simulate", "--", "40"]
     profiles: ["cd"]

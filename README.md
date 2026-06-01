@@ -28,7 +28,7 @@ one axis at a time, so the eval scores tell a clean story:
 Acme's real refund/proration/trial rules are proprietary — the model can't guess
 them. So v1 and v2 confidently invent plausible-but-wrong specifics (a
 "30-day refund" when the real window is 14 days), while **v3** reads the
-[`billing-policy` skill](.claude/skills/billing-policy/SKILL.md) and gets the
+[`billing-policy` skill](https://github.com/continuous-labs-ai/continuous-sample-typescript/blob/add-v3-billing-skill/.claude/skills/billing-policy/SKILL.md) and gets the
 exact terms right. The eval set ([`evals/support.jsonl`](evals/support.jsonl),
 scored by [`evals/judge.md`](evals/judge.md)) is built so **v1 < v2 < v3**.
 
@@ -56,7 +56,7 @@ continuous login
 npm install
 
 # 3. Two keys in the environment:
-export CONTINUOUS_API_KEY=ck_...        # Continuous (from `continuous login`)
+export CONTINUOUS_API_KEY=ck_...        # worker key — minted in the dashboard (Admin → Worker API keys)
 export CONTINUOUS_API_URL=https://api.continuouslabs.ai   # or your dev stack
 export ANTHROPIC_API_KEY=sk-ant-...     # the Claude Agent SDK calls Anthropic
 ```
@@ -92,11 +92,16 @@ on-demand-dispatch CI flow, and the staged CD rollout — lives in
 ```
 .continuous/config.yml        # agent + variants + the eval (the variant catalog)
 .continuous/rollouts.yml      # CD ramp plans
-.claude/skills/billing-policy/ # the proprietary policy v3 reads (an Agent Skill)
-agent/variants/v{1,2,3}/      # one model × prompt × skill composition each
-evals/support.jsonl           # eval dataset: {name, input, expected_output}
-evals/judge.md                # the rubric Continuous scores against
+agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
+evals/support.jsonl           # primary eval dataset: {name, input, expected_output}
+evals/judge.md                # the support rubric Continuous scores against
+evals/tone.jsonl              # second, non-blocking eval (tone)
+evals/tone-judge.md           # the tone rubric
 src/                          # the worker (CI) + simulator (CD)
+#
+# On the pre-staged add-v3-billing-skill branch (the CI demo):
+#   agent/variants/v3/             # v2 + the billing-policy skill
+#   .claude/skills/billing-policy/ # the proprietary policy v3 reads (an Agent Skill)
 ```
 
 ## Notes
