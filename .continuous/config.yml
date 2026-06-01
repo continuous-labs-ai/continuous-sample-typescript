@@ -17,5 +17,12 @@ evals:
     dataset: evals/support.jsonl
     judge: evals/judge.md
     on: change
-    dispatch: auto
+    dispatch: on-demand
     block_pr: true
+  - name: tone
+    agent: support-agent
+    dataset: evals/tone.jsonl
+    judge: evals/tone-judge.md
+    on: change
+    dispatch: on-demand
+    block_pr: false

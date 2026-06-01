@@ -1,0 +1,32 @@
+# Setup 2 — run the agent as a production-like deployment (preview/production
+# regime). The worker is pinned to a deploy SHA (CONTINUOUS_GIT_SHA) so its queue
+# matches a PR Run's sha:<head_sha>. Normally driven by Tilt (which builds the
+# image with a tightly-scoped context); see Tiltfile.
+services:
+  worker:
+    image: continuous-sample-typescript-worker
+    build:
+      context: ..
+      dockerfile: continuous-sample-typescript/Dockerfile
+    env_file: .env
+    environment:
+      # The SDK reads CONTINUOUS_API_KEY; .env stores the worker key under
+      # CONTINUOUS_WORKER_KEY.
+      CONTINUOUS_API_KEY: ${CONTINUOUS_WORKER_KEY:-}
+      # Preview/production deploy: set to the PR head SHA for the CI demo so the
+      # worker lands on queue sha:<head_sha>. Tilt sets this from `git_sha`.
+      CONTINUOUS_GIT_SHA: ${CONTINUOUS_GIT_SHA:?set CONTINUOUS_GIT_SHA to the deploy/PR head SHA}
+
+  # Production-traffic simulator for the CD demo (queue-independent — it reports
+  # trajectories rather than polling). Start on demand:
+  #   docker compose --profile cd up simulate
+  simulate:
+    image: continuous-sample-typescript-worker
+    build:
+      context: ..
+      dockerfile: continuous-sample-typescript/Dockerfile
+    env_file: .env
+    environment:
+      CONTINUOUS_API_KEY: ${CONTINUOUS_WORKER_KEY:-}
+    command: ["npm", "run", "simulate", "--", "40"]
+    profiles: ["cd"]
