@@ -88,9 +88,10 @@ CI demo.
 - **`ANTHROPIC_API_KEY`** — the Claude Agent SDK spawns Claude Code (a subprocess)
   that calls Anthropic; the key needs access to **Haiku 4.5 and Sonnet 4.6**.
 - **`git`** + **`gh`**, with `gh` authenticated for `continuous-labs-ai` (`gh auth status`).
-- **Node ≥ 18** (only if running the worker on the host instead of in Tilt). The SDK
-  is a **`file:../continuous/sdk/typescript`** dependency, so a host run needs the
-  monorepo cloned as a sibling `../continuous`. (For the container, see Step 0.2.)
+- **Node ≥ 18** — to run the agent on the host (Setup 1). Both setups resolve
+  `@continuous/sdk` from a sibling **`../continuous`** monorepo checkout (host: the
+  `file:` path; container: via the Docker build context), so clone the monorepo next
+  to this repo.
 
 ### C. Two credentials — don't conflate them
 
@@ -183,35 +184,41 @@ A fresh session lands these. Two parts: the **config changes** (on `main`) and t
 ### 0.2 The Tilt stack (new files in this repo)
 
 This packages **Setup 2** — the agent as a production-like container pinned to a
-commit (the preview/production regime). **Setup 1** (local dev) needs no new files —
-it's just `npm run worker` on the host. Add:
+commit. **Setup 1** (local dev) is the *same code* run on the host (`npm run
+worker`). **The build must run identically both ways** — same SDK resolution, same
+runtime. The one thing to get right is the SDK path; then three files:
 
-- **`Dockerfile`** — installs deps and runs the worker. Two wrinkles to solve in the
-  build:
-  - ⚠️ **SDK resolution.** `@continuous/sdk` is a `file:../continuous/...` dependency,
-    which is **outside this repo's build context**. Either expand the Docker build
-    context to the parent dir (monorepo + sample), `npm pack` the SDK and vendor the
-    tarball, or switch to the published `@continuous/sdk` once it's on npm.
-  - ⚠️ **Claude Code runtime.** The Agent SDK spawns the Claude Code engine — make
-    sure its CLI is present in the image (Node is the base, but verify the engine
-    resolves).
+- **SDK resolves the same on host and in the image.** `@continuous/sdk` is a
+  `file:../continuous/sdk/typescript` dependency — it resolves on the host (sibling
+  monorepo) and resolves in the image **iff** the build context includes that sibling.
+  So build with the **parent dir as context**, keeping the same `file:` spec (it
+  becomes a plain `@continuous/sdk` version once published to npm). The Claude Code
+  engine the Agent SDK spawns is bundled with `@anthropic-ai/claude-agent-sdk`, so the
+  Node base image is all the runtime it needs.
+
+Files:
+
+- **`Dockerfile`** — Node base; context spans this repo **and** `../continuous`:
   ```dockerfile
   FROM node:22-slim
-  WORKDIR /app
-  COPY . .
-  RUN npm install --omit=dev      # see SDK-resolution note above
+  # build context = the parent dir holding both repos, so the file: path resolves
+  COPY continuous/sdk/typescript          /continuous/sdk/typescript
+  COPY continuous-sample-typescript       /continuous-sample-typescript
+  WORKDIR /continuous-sample-typescript
+  RUN npm install --omit=dev
   CMD ["npm", "run", "worker"]
   ```
 - **`docker-compose.yml`** — a `worker` service (and a `simulate` service, profile
   `cd`), passing `CONTINUOUS_API_URL`, `CONTINUOUS_API_KEY`, `ANTHROPIC_API_KEY`, and
   `CONTINUOUS_GIT_SHA` through from the environment.
-- **`Tiltfile`** — parameterize the deploy SHA:
+- **`Tiltfile`** — build with the **parent as context** so the sibling SDK resolves,
+  and parameterize the deploy SHA:
   ```python
   config.define_string('git_sha')
   cfg = config.parse()
   git_sha = cfg.get('git_sha', str(local('git rev-parse HEAD')).strip())
-  docker_compose('./docker-compose.yml')
-  # inject CONTINUOUS_GIT_SHA=git_sha into the worker/simulate services
+  docker_build('support-agent', context='..', dockerfile='./Dockerfile')
+  docker_compose('./docker-compose.yml')   # injects CONTINUOUS_GIT_SHA=git_sha
   dc_resource('worker', labels=['agent'])
   dc_resource('simulate', labels=['agent'])   # CD only; start on demand
   ```
@@ -219,7 +226,7 @@ it's just `npm run worker` on the host. Add:
 **Implementation checklist**
 
 - [ ] `billing-support` → `dispatch: on-demand`; author `evals/tone.*`; add `tone` eval
-- [ ] `Dockerfile` (worker; **SDK resolution + Claude Code runtime** solved), `docker-compose.yml`, `Tiltfile`
+- [ ] SDK via sibling `file:` + parent build context; `Dockerfile` + `docker-compose.yml` + `Tiltfile`, runs identically on host and in the container
 - [ ] Mirror all of the above into `continuous-sample-python`
 - [ ] Push `main` (both repos); confirm catalog **and** plan mirror registered
 - [ ] Rebase `add-v3-billing-skill` onto new main (both) and force-push
