@@ -189,7 +189,7 @@ continuous eval                        # all declared evals
    worker on `sha:<head_sha>`, variants `[v1,v2,v3]`.
 2. **Open the PR:**
    ```bash
-   gh pr create --base main --head add-v3-billing-skill --title "Add v3: billing-policy skill" --fill
+   gh pr create --base main --head add-v3-billing-skill --title "Add v3: billing-policy skill" -F .github/PR_BODY_v3.md
    ```
 3. Continuous posts a **check-run** + a **PR comment**: one table per agent —
    **rows = evals (`billing-support`, `tone`), columns = variants (v1,v2,v3)** — each
