@@ -1,10 +1,11 @@
 agents:
   - name: support-agent
     variants:
-      # Each variant is a full model × prompt × skill composition. The `paths`
-      # globs scope CI: on the PR path the on:auto triage step runs a variant's
-      # eval cell only when the diff touches that variant's files (0002 §3.1).
-      # CLI `continuous eval` has no diff, so on:auto dispatches every variant.
+      # Each variant is a full model × prompt × skill composition. On a PR,
+      # `on: auto` (below) runs a relevance triage to pick which variants' eval
+      # cells to dispatch; `continuous eval` from the CLI has no diff, so it
+      # dispatches every variant. (Paths-scoped gating — run only when a variant's
+      # files change — is `on: change`, 0002 §3.1.)
       - name: v1
         paths:
           - "agent/variants/v1/**"

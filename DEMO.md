@@ -1,12 +1,10 @@
 # Demo runbook — Continuous end-to-end (TypeScript sample)
 
-This is the operator runbook **and** the implementation plan for taking the Acme
-billing-support agent through Continuous end-to-end against the **dev** stack. A
-Python twin lives in `continuous-sample-python/DEMO.md` — same flow, mirror-image
-commands.
+Operator runbook for taking the Acme billing-support agent through Continuous
+end-to-end against the **dev** stack. A Python twin lives in
+`continuous-sample-python/DEMO.md` — same flow, mirror-image commands.
 
-We demo three flows, **all runnable** once this repo ships its own Tilt stack
-(below):
+Three flows, all runnable:
 
 1. **Eval-as-code** — author evals (dataset + judge + config) that score each variant.
 2. **CI, on-demand dispatch** — open a PR that adds a candidate variant (v3 + the
@@ -17,8 +15,7 @@ We demo three flows, **all runnable** once this repo ships its own Tilt stack
    `10 → 25 → 50 → 100` ramp and **pause after 2 of 4 stages**, with the simulator
    feeding live traffic so the canary gates for real.
 
-> Status: pre-staged but **not yet built** — see
-> [Step 0](#step-0--what-to-build-first). Land those, then run the demo.
+> Status: **built and pre-staged on `main`** — the runbook below is runnable end-to-end.
 
 ---
 
@@ -76,7 +73,7 @@ CI demo.
 | GitHub App **`continuous-ci-dev`** installed on the **`continuous-labs-ai`** org | <https://github.com/apps/continuous-ci-dev/installations/new> | ✅ installed |
 | A Continuous **workspace** for the org | Sign in at <https://dashboard-dev.continuouslabs.ai> with a GitHub account that belongs to `continuous-labs-ai`; sign-in provisions the workspace. Note the **workspace id** from the URL (`/w/<wsId>`); the one used so far is `ws_01KSY1HJ4XSPD1JQESEBXECTY7`. | ✅ |
 | A **Worker API key** | Dashboard → workspace → **Admin → Worker API keys** (`/w/<wsId>/admin/tokens`) → **Mint**. It's a WorkOS org API key; the full value is **shown once** on mint — copy it. (`.env.example` uses `ck_…` as a placeholder; use whatever the dashboard shows.) | ⬜ mint |
-| **Variant catalog + plan mirror registered** | Both register when a push to `main` touches `.continuous/config.yml` **or** `.continuous/rollouts.yml` (0004 §15.2): the server reads both files at that SHA and upserts the variant catalog (`main_variant=v1`, variants `v1,v2`) and the plan mirror (`ramp`, `ramp-fast`). The app was installed *after* the repo's initial commits, so this hasn't fired — landing [Step 0](#step-0--what-to-build-first) is the push that registers it. Verify in the dashboard the `support-agent` shows v1/v2 with **main = v1**. | ⬜ |
+| **Variant catalog + plan mirror registered** | Both register when a push to `main` touches `.continuous/config.yml` **or** `.continuous/rollouts.yml` (0004 §15.2): the server reads both files at that SHA and upserts the variant catalog (`main_variant=v1`, variants `v1,v2`) and the plan mirror (`ramp`, `ramp-fast`). Verify in the dashboard the `support-agent` shows v1/v2 with **main = v1**. | ⬜ |
 
 ### B. Local toolchain (per operator)
 
@@ -138,103 +135,7 @@ continuous login
 
 ---
 
-## Step 0 — What to build first (implementation plan)
-
-A fresh session lands these. Two parts: the **config changes** (on `main`) and the
-**Tilt stack** (new files in this repo).
-
-### 0.1 Config: on-demand dispatch + a second eval
-
-1. **Switch evals to on-demand dispatch.** In `.continuous/config.yml`, change
-   `billing-support` from `dispatch: auto` to **`dispatch: on-demand`** (or drop the
-   line — on-demand is the spec default, 0002 §5). This makes the PR comment render
-   the **checkbox selector** instead of auto-running everything.
-
-2. **Add a second, advisory eval so "select which eval" is real** — proposed
-   **`tone`** — giving the PR comment a **2-eval × 3-variant** grid:
-
-   - `evals/tone.jsonl` — rows scoring empathy / clarity / professionalism, **not**
-     policy specifics (so it's not skill-sensitive and stays flat v1→v3, unlike
-     `billing-support` which jumps on v3):
-     ```json
-     {"name": "apology-outage", "input": "Your app was down for an hour during our launch. Not happy.", "expected_output": "Acknowledge the impact, apologize sincerely without being defensive, and offer a concrete next step. Empathy first, specifics second."}
-     {"name": "jargon-free", "input": "I don't understand what 'proration' means on my invoice.", "expected_output": "Explain proration in plain language with a short concrete example, no jargon, then offer to apply it to their invoice."}
-     {"name": "firm-but-kind", "input": "Just give me a refund or I'm leaving.", "expected_output": "Stay calm and respectful, restate willingness to help, and explain options clearly without capitulating to a policy that doesn't apply."}
-     {"name": "greeting-clarity", "input": "hi, I have a question about my account", "expected_output": "A warm, professional opening that invites the specific question, without guessing the issue."}
-     ```
-   - `evals/tone-judge.md` — a short rubric scoring tone only on `[0.0, 1.0]`.
-   - In `.continuous/config.yml` (advisory → does **not** block merge):
-     ```yaml
-     - name: tone
-       agent: support-agent
-       dataset: evals/tone.jsonl
-       judge: evals/tone-judge.md
-       on: change
-       dispatch: on-demand
-       block_pr: false
-     ```
-   Keep `billing-support` as `block_pr: true`.
-
-3. **Push `main`** → registers the variant catalog **and** the plan mirror. Verify in
-   the dashboard.
-
-4. **Rebase `add-v3-billing-skill`** onto the new main and force-push, so the PR diff
-   stays **v3 variant + skill only**.
-
-### 0.2 The Tilt stack (new files in this repo)
-
-This packages **Setup 2** — the agent as a production-like container pinned to a
-commit. **Setup 1** (local dev) is the *same code* run on the host (`npm run
-worker`). **The build must run identically both ways** — same SDK resolution, same
-runtime. The one thing to get right is the SDK path; then three files:
-
-- **SDK resolves the same on host and in the image.** `@continuous/sdk` is a
-  `file:../continuous/sdk/typescript` dependency — it resolves on the host (sibling
-  monorepo) and resolves in the image **iff** the build context includes that sibling.
-  So build with the **parent dir as context**, keeping the same `file:` spec (it
-  becomes a plain `@continuous/sdk` version once published to npm). The Claude Code
-  engine the Agent SDK spawns is bundled with `@anthropic-ai/claude-agent-sdk`, so the
-  Node base image is all the runtime it needs.
-
-Files:
-
-- **`Dockerfile`** — Node base; context spans this repo **and** `../continuous`:
-  ```dockerfile
-  FROM node:22-slim
-  # build context = the parent dir holding both repos, so the file: path resolves
-  COPY continuous/sdk/typescript          /continuous/sdk/typescript
-  COPY continuous-sample-typescript       /continuous-sample-typescript
-  WORKDIR /continuous-sample-typescript
-  RUN npm install --omit=dev
-  CMD ["npm", "run", "worker"]
-  ```
-- **`docker-compose.yml`** — a `worker` service (and a `simulate` service, profile
-  `cd`), passing `CONTINUOUS_API_URL`, `CONTINUOUS_API_KEY`, `ANTHROPIC_API_KEY`, and
-  `CONTINUOUS_GIT_SHA` through from the environment.
-- **`Tiltfile`** — build with the **parent as context** so the sibling SDK resolves,
-  and parameterize the deploy SHA:
-  ```python
-  config.define_string('git_sha')
-  cfg = config.parse()
-  git_sha = cfg.get('git_sha', str(local('git rev-parse HEAD')).strip())
-  docker_build('support-agent', context='..', dockerfile='./Dockerfile')
-  docker_compose('./docker-compose.yml')   # injects CONTINUOUS_GIT_SHA=git_sha
-  dc_resource('worker', labels=['agent'])
-  dc_resource('simulate', labels=['agent'])   # CD only; start on demand
-  ```
-
-**Implementation checklist**
-
-- [ ] `billing-support` → `dispatch: on-demand`; author `evals/tone.*`; add `tone` eval
-- [ ] SDK via sibling `file:` + parent build context; `Dockerfile` + `docker-compose.yml` + `Tiltfile`, runs identically on host and in the container
-- [ ] Mirror all of the above into `continuous-sample-python`
-- [ ] Push `main` (both repos); confirm catalog **and** plan mirror registered
-- [ ] Rebase `add-v3-billing-skill` onto new main (both) and force-push
-- [ ] Mint a worker key; `tilt up` and confirm the worker subscribes ([v1,v2] on main; [v1,v2,v3] on the v3 branch)
-
----
-
-## Step 1 — Two ways to run the agent
+## Run the agent — two setups
 
 The agent runs **its own local files** — the server sends only a `variant` name +
 input — so the checkout you run determines what each variant does (v3 reads the skill
@@ -278,17 +179,17 @@ continuous eval billing-support        # pushes a temp ref, dispatches, tails SS
 continuous eval                        # all declared evals
 ```
 
-`evals/tone.*` from Step 0 is a second worked example of authoring one.
+`evals/tone.*` is a second worked example of authoring one.
 
 ---
 
 ## Demo B — CI: open the v3 PR, dispatch on demand, pick the eval
 
-1. **Bring up the preview env** (Step 1, Setup 2 — `tilt up` on the v3 branch) →
+1. **Bring up the preview env** (Setup 2 — `tilt up` on the v3 branch) →
    worker on `sha:<head_sha>`, variants `[v1,v2,v3]`.
 2. **Open the PR:**
    ```bash
-   gh pr create --base main --head add-v3-billing-skill --title "Add v3: billing-policy skill" --fill
+   gh pr create --base main --head add-v3-billing-skill --title "Add v3: billing-policy skill" -F .github/PR_BODY_v3.md
    ```
 3. Continuous posts a **check-run** + a **PR comment**: one table per agent —
    **rows = evals (`billing-support`, `tone`), columns = variants (v1,v2,v3)** — each
@@ -310,7 +211,7 @@ the worker's `CONTINUOUS_GIT_SHA` ≠ the PR head SHA (queue mismatch).
 ## Demo C — CD: roll out v1 → v2, pause after two stages
 
 Plan `ramp` is `10 → 25 → 50 → 100`, 30-minute bake; operator actions override the
-bake (0004 §11). The plan name resolves against the **plan mirror** from Step 0.
+bake (0004 §11). The plan name resolves against the registered **plan mirror**.
 
 The **production app** here is the **simulator** — it asks `get_variant` and reports
 trajectories, so it doesn't poll a queue (queue identity is irrelevant to Demo C) and
