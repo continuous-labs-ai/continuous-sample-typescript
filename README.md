@@ -74,78 +74,18 @@ npm run worker
 
 ---
 
-## Demo 1 — CI: open a PR for v3
+## Demos
 
-When you open a pull request, Continuous evaluates the variants whose files the
-diff touches, then posts a check-run and a comment with the per-variant scores.
-`block_pr: true` gates the merge on the result.
+The full end-to-end runbook — prerequisites (GitHub App, worker key, env), the
+on-demand-dispatch CI flow, and the staged CD rollout — lives in
+**[DEMO.md](DEMO.md)**:
 
-```bash
-git checkout -b add-v3-billing-skill
-
-# The PR introduces v3: a new variant entry + its prompt, plus the skill.
-#   .continuous/config.yml                       # add the v3 variant
-#   agent/variants/v3/{prompt.md,variant.yaml}   # model + prompt + skills:[billing-policy]
-#   .claude/skills/billing-policy/SKILL.md        # Acme's real policy
-
-git add -A && git commit -m "Add v3: billing-policy skill"
-git push -u origin add-v3-billing-skill
-gh pr create --fill
-```
-
-Because v3's `paths` glob matches the diff, Continuous runs the
-`billing-support` eval for **v3 against the baseline** and comments with the
-score delta. v3 should win on the policy questions — that's the skill earning
-its place.
-
-**No GitHub App yet?** Dispatch the same eval from your laptop against your
-running worker — no PR required:
-
-```bash
-continuous eval billing-support
-```
-
----
-
-## Demo 2 — CD: roll out v1 → v2, pause after two stages
-
-Promote v2 (the current candidate) over the v1 baseline through a staged ramp,
-and hold it after two completed stages. The plan
-[`ramp`](.continuous/rollouts.yml) is `10 → 25 → 50 → 100`.
-
-```bash
-# Start the rollout. baseline = current main (v1), candidate = v2.
-# This enters stage 0 (10%) immediately and tails the live event stream.
-continuous rollout start support-agent v2 --plan ramp
-#   Started rol_01HK...  Watch: continuous rollout show rol_01HK...
-
-# From a second terminal, drive the stages (use the rol_ id printed above):
-continuous rollout advance rol_01HK...   # stage 0 done -> stage 1 (25%)   [1 completed]
-continuous rollout advance rol_01HK...   # stage 1 done -> stage 2 (50%)   [2 completed]
-continuous rollout pause   rol_01HK...   # hold at stage 2, status = paused
-
-continuous rollout show rol_01HK...
-#   Rollout rol_01HK... — paused (stage 2/4)
-#   v1 -> v2
-#   Actions: advance by you: applied ... / advance by you: applied ... / pause by you: applied
-```
-
-The rollout now sits **paused at 50%**, non-terminal — it waits indefinitely
-until you `continuous rollout resume` (continue the ramp), `rollback` (back to
-v1), or `cancel`.
-
-### Variant, autonomous canary
-
-To watch the **Canary Agent** gate the rollout on real traffic instead of
-driving it by hand, use the fast plan and feed it production trajectories:
-
-```bash
-continuous rollout start support-agent v2 --plan ramp-fast   # 2-minute bakes
-npm run simulate -- 40                                        # live traffic -> candidate + baseline
-```
-
-At each stage gate the canary compares candidate vs baseline judgments and emits
-`advance`, `retreat`, or `pause` on its own.
+- **Demo A — Create an eval:** author a dataset + judge + config entry and score
+  the agent (`continuous eval billing-support`, no PR required).
+- **Demo B — CI:** open the pre-staged `add-v3-billing-skill` PR; pick which eval
+  to dispatch from the PR-comment checkbox table; scores gate the merge.
+- **Demo C — CD:** roll out v1 → v2 through a `10 → 25 → 50 → 100` ramp and pause
+  after 2 of 4 stages.
 
 ## Layout
 
