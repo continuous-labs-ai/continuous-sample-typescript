@@ -1,7 +1,7 @@
 // The Continuous worker: serve each variant by driving the Claude Agent SDK.
 //
 // This is the whole integration. `ManagedAgentWorker` takes a factory
-// `(task) -> trajectory`; `startWorkersForVariants` runs one poll loop per
+// `(task) -> trajectory`; `startWorker` runs one poll loop advertising every
 // variant. The factory reads `task.variant` — the only channel the SDK uses to
 // tell the worker which composition to run — loads that variant's
 // `model x prompt x skill`, runs the Anthropic Claude Agent SDK, and returns the
@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import {
   ManagedAgentWorker,
-  startWorkersForVariants,
+  startWorker,
   type Response,
   type Task,
 } from "@continuous/sdk";
@@ -51,10 +51,19 @@ export async function runVariant(
   spec: VariantSpec,
   agentInput: string,
 ): Promise<Response[]> {
-  // Each assistant turn becomes one Response with text/tool_use content blocks.
-  // The server judge flattens text blocks into the prompt it scores, so the
-  // final answer must be a text block.
-  const trajectory: Response[] = [];
+  // Lead with the originating input as a `user` turn, then one `assistant`
+  // Response per turn. The leading input turn matters twice: the server judge
+  // flattens it into the prompt it scores, and shadow recovers it as the replay
+  // input — an assistant-only trajectory yields an empty prefix and is never
+  // replayed.
+  const trajectory: Response[] = [
+    {
+      id: "input",
+      role: "user",
+      created_at: new Date().toISOString(),
+      content: [{ type: "text", text: agentInput }],
+    },
+  ];
   for await (const message of query({
     prompt: agentInput,
     options: buildOptions(spec),
@@ -85,12 +94,38 @@ export async function runVariant(
   return trajectory;
 }
 
+// Normalize a Task input to a prompt. Eval tasks carry a plain question; shadow
+// replay tasks carry the originating trajectory prefix (a JSON list of turns),
+// so recover the user text from it.
+function promptFromPayload(raw: string): string {
+  const text = raw.trim();
+  if (text.startsWith("[")) {
+    try {
+      const items = JSON.parse(text) as Array<{
+        role?: string;
+        content?: Array<{ type?: string; text?: string }>;
+      }>;
+      const parts = items
+        .filter((t) => t.role === "user")
+        .flatMap((t) =>
+          (t.content ?? [])
+            .filter((b) => b.type === "text")
+            .map((b) => b.text ?? ""),
+        );
+      if (parts.length > 0) return parts.join("\n");
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
 function buildFactory() {
   const specs = loadVariants();
   return async (task: Task): Promise<Response[]> => {
     const spec = specs.get(task.variant);
     if (!spec) throw new Error(`unknown variant: ${task.variant}`);
-    return runVariant(spec, task.payload.input);
+    return runVariant(spec, promptFromPayload(task.payload.input));
   };
 }
 
@@ -100,17 +135,20 @@ export async function main(): Promise<void> {
     agent,
     agentFactory: buildFactory(),
   });
-  // One independent poll loop per declared variant. On `main` that's [v1, v2];
-  // on the v3 PR branch config adds v3 and this list grows with no code change.
+  // One subscription advertising ALL declared variants. Per-variant poll loops
+  // collide on the (workspace, agent, queue, client) subscription key and clobber
+  // `variants` to a single value, so the platform only sees the worker as serving
+  // one variant and shadow replays for the others route to a queue no worker
+  // serves. A single all-variants poll keeps the subscription complete.
   const variants = [...loadVariants().keys()];
-  const handles = startWorkersForVariants(worker, variants);
+  const handle = startWorker(worker, { variants });
   console.log(
     `support-agent worker up: agent=${agent} variants=${variants.join(",")}`,
   );
   process.on("SIGINT", () => {
-    void Promise.all(handles.map((h) => h.stop()));
+    void handle.stop();
   });
-  await Promise.all(handles.map((h) => h.done()));
+  await handle.done();
 }
 
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);

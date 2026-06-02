@@ -76,16 +76,16 @@ npm run worker
 
 ## Demos
 
-The full end-to-end runbook — prerequisites (GitHub App, worker key, env), the
-on-demand-dispatch CI flow, and the staged CD rollout — lives in
-**[DEMO.md](DEMO.md)**:
+The full runbook + validation guide — prerequisites, the cast (v1/v2/v3), and the
+five flows packaged as `just` recipes (`just --list`) — lives in
+**[VALIDATION.md](VALIDATION.md)**:
 
-- **Demo A — Create an eval:** author a dataset + judge + config entry and score
-  the agent (`continuous eval billing-support`, no PR required).
-- **Demo B — CI:** open the pre-staged `add-v3-billing-skill` PR; pick which eval
-  to dispatch from the PR-comment checkbox table; scores gate the merge.
-- **Demo C — CD:** roll out v1 → v2 through a `10 → 25 → 50 → 100` ramp and pause
-  after 2 of 4 stages.
+- **A — Eval:** score every variant locally with `just eval` (no PR).
+- **B — CI:** open the pre-staged `add-v3-billing-skill` PR (`just pr`); pick which
+  eval cells to dispatch from the PR comment (on-demand + auto); scores gate the merge.
+- **C — Rollout:** `just rollout` — ramp v1 → v2 with live canary traffic.
+- **D — Experiment:** `just experiment` — A/B v1 vs v2 on a live traffic slice.
+- **E — Shadow:** `just shadow` — replay sampled traffic through the candidate, out of band.
 
 ## Layout
 
