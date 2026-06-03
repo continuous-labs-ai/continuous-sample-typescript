@@ -26,5 +26,5 @@ evals:
     dataset: evals/escalation.jsonl
     judge: evals/escalation-judge.md
     on: auto
-    dispatch: on-demand
+    dispatch: auto
     block_pr: false
