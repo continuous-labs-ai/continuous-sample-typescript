@@ -1,18 +1,3 @@
-// The Continuous worker: serve each variant by driving the Claude Agent SDK.
-//
-// This is the whole integration. `ManagedAgentWorker` takes a factory
-// `(task) -> trajectory`; `startWorker` runs one poll loop advertising every
-// variant. The factory reads `task.variant` — the only channel the SDK uses to
-// tell the worker which composition to run — loads that variant's
-// `model x prompt x skill`, runs the Anthropic Claude Agent SDK, and returns the
-// trajectory. Continuous judges it server-side against `evals/support-judge.md`.
-//
-// Run it (from the repo root) with both keys in the environment:
-//
-//   CONTINUOUS_API_KEY=ck_...  CONTINUOUS_API_URL=http://localhost:8080 \
-//   ANTHROPIC_API_KEY=sk-ant-... \
-//     npm run worker
-
 import { fileURLToPath } from "node:url";
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import {
@@ -32,12 +17,8 @@ import {
 import { usageFromModelUsage } from "./usage.js";
 
 function buildOptions(spec: VariantSpec): Options {
-  // Model and system prompt come straight from the variant. Skills are the
-  // third axis: a variant that declares skills loads exactly those (the `skills`
-  // option auto-enables the Skill tool and the project setting source); a
-  // variant with no skills runs isolated (`settingSources: []`) so the baseline
-  // can't see the policy on disk. `bypassPermissions` keeps the headless worker
-  // from blocking on a permission prompt no one can answer.
+  // settingSources:[] isolates the baseline from on-disk policy; bypassPermissions
+  // avoids a headless permission prompt no one can answer.
   const base: Options = {
     model: spec.model,
     systemPrompt: spec.systemPrompt,
@@ -54,11 +35,8 @@ export async function runVariant(
   spec: VariantSpec,
   agentInput: string,
 ): Promise<AgentResult> {
-  // Lead with the originating input as a `user` turn, then one `assistant`
-  // Response per turn. The leading input turn matters twice: the server judge
-  // flattens it into the prompt it scores, and shadow recovers it as the replay
-  // input — an assistant-only trajectory yields an empty prefix and is never
-  // replayed.
+  // The leading input turn matters twice: the server judge flattens it into the
+  // scored prompt, and shadow replay recovers it as the replay input.
   const trajectory: Response[] = [
     {
       id: "input",
@@ -102,9 +80,8 @@ export async function runVariant(
   return { trajectory, usage };
 }
 
-// Normalize a Task input to a prompt. Eval tasks carry a plain question; shadow
-// replay tasks carry the originating trajectory prefix (a JSON list of turns),
-// so recover the user text from it.
+// Shadow replay tasks carry the originating trajectory prefix (a JSON list of
+// turns), so recover the user text from it; eval tasks are a plain question.
 function promptFromPayload(raw: string): string {
   const text = raw.trim();
   if (text.startsWith("[")) {
@@ -143,11 +120,8 @@ export async function main(): Promise<void> {
     agent,
     agentFactory: buildFactory(),
   });
-  // One subscription advertising ALL declared variants. Per-variant poll loops
-  // collide on the (workspace, agent, queue, client) subscription key and clobber
-  // `variants` to a single value, so the platform only sees the worker as serving
-  // one variant and shadow replays for the others route to a queue no worker
-  // serves. A single all-variants poll keeps the subscription complete.
+  // A single all-variants subscription avoids the (workspace,agent,queue,client)
+  // collision that clobbers `variants`, stranding shadow replays on a queue no worker serves.
   const variants = [...loadVariants().keys()];
   const handle = startWorker(worker, { variants });
   console.log(
