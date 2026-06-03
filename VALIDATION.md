@@ -137,3 +137,4 @@ so re-run `continuous shadow show <id>` as the candidate arm fills.
 - **Runs / PR evals:** `https://dashboard-dev.continuouslabs.ai/w/<wsId>` → Runs, and the GitHub PR.
 - **Rollouts / Experiments / Shadows:** the dashboard views, or `continuous {rollout|experiment|shadow} show <id>`.
 - **Workers:** `just workers` (subscriptions + their queue identity).
+- **Cost:** the worker reports each run's token usage; the platform prices it per model (a dated snapshot resolves to its family rate) into the cost block shown beside latency and pass-rate on the run page and every CD surface.

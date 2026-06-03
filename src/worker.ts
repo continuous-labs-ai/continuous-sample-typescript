@@ -18,8 +18,10 @@ import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import {
   ManagedAgentWorker,
   startWorker,
+  type AgentResult,
   type Response,
   type Task,
+  type Usage,
 } from "@continuous/sdk";
 import {
   REPO_ROOT,
@@ -27,6 +29,7 @@ import {
   loadVariants,
   type VariantSpec,
 } from "./variants.js";
+import { usageFromModelUsage } from "./usage.js";
 
 function buildOptions(spec: VariantSpec): Options {
   // Model and system prompt come straight from the variant. Skills are the
@@ -50,7 +53,7 @@ function buildOptions(spec: VariantSpec): Options {
 export async function runVariant(
   spec: VariantSpec,
   agentInput: string,
-): Promise<Response[]> {
+): Promise<AgentResult> {
   // Lead with the originating input as a `user` turn, then one `assistant`
   // Response per turn. The leading input turn matters twice: the server judge
   // flattens it into the prompt it scores, and shadow recovers it as the replay
@@ -64,10 +67,15 @@ export async function runVariant(
       content: [{ type: "text", text: agentInput }],
     },
   ];
+  let usage: Usage | undefined;
   for await (const message of query({
     prompt: agentInput,
     options: buildOptions(spec),
   })) {
+    if (message.type === "result") {
+      usage = usageFromModelUsage(message.modelUsage);
+      continue;
+    }
     if (message.type !== "assistant") continue;
     const content: unknown[] = [];
     for (const block of message.message.content) {
@@ -91,7 +99,7 @@ export async function runVariant(
       });
     }
   }
-  return trajectory;
+  return { trajectory, usage };
 }
 
 // Normalize a Task input to a prompt. Eval tasks carry a plain question; shadow
@@ -122,7 +130,7 @@ function promptFromPayload(raw: string): string {
 
 function buildFactory() {
   const specs = loadVariants();
-  return async (task: Task): Promise<Response[]> => {
+  return async (task: Task): Promise<AgentResult> => {
     const spec = specs.get(task.variant);
     if (!spec) throw new Error(`unknown variant: ${task.variant}`);
     return runVariant(spec, promptFromPayload(task.payload.input));
