@@ -90,7 +90,7 @@ five flows packaged as `just` recipes (`just --list`) — lives in
 ## Layout
 
 ```
-.continuous/config.yml        # agent + variants + the eval (the variant catalog)
+.continuous/config.yml        # agent + variants + the eval
 .continuous/rollouts.yml      # CD ramp plans
 agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
 evals/support.jsonl           # primary eval dataset: {name, input, expected_output}

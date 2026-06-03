@@ -38,9 +38,11 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
   with a GitHub account in `continuous-labs-ai`; sign-in provisions it.
 - A **worker key** — Dashboard → workspace → **Admin → Worker API keys** → **Mint**
   (shown once).
-- The **variant catalog + plan mirror** register on a push to `main` that touches
-  `.continuous/config.yml` or `.continuous/rollouts.yml`. Verify in the dashboard
-  that `support-agent` shows v1/v2 with **main = v1**.
+- Your `.continuous/config.yml` (+ `rollouts.yml`) live on `main`. There is no
+  catalog or plan mirror to register — creates snapshot variants + judge from a
+  `(repo, sha)` (blank sha = the default-branch HEAD). The dashboard derives
+  `support-agent`'s variants from its runs; `main_variant` is seeded the first time
+  you start a rollout/experiment/shadow.
 
 ### Local
 
