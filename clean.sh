@@ -12,7 +12,7 @@ set -euo pipefail
 
 creds="${XDG_CONFIG_HOME:-$HOME/.config}/continuous/credentials.toml"
 [ -f "$creds" ] || { echo "no session — run 'continuous login' (just login) first" >&2; exit 1; }
-field() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\(.*\)\".*/\1/p" "$creds"; }
+field() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*['\"]\(.*\)['\"].*/\1/p" "$creds"; }
 sealed="$(field sealed_session)"
 ws="$(field workspace_id)"
 api="${CONTINUOUS_API_URL:-$(field api_url)}"
@@ -32,9 +32,19 @@ for id in $(ids rollouts rollouts);        do req -o /dev/null -X POST "$api/v1/
 sleep 4   # let the workflow-driven cancels settle to terminal before deleting
 
 echo "→ deleting runs / rollouts / experiments / shadows…"
-# Runs come from the agent view (GET /v1/runs scopes a CLI bearer to its own
-# source=cli runs; the agent detail returns the agent's runs across sources).
-for id in $(ids "agents/$agent" runs);     do req -o /dev/null -X DELETE "$api/v1/runs/$id"        2>/dev/null && echo "  - run/$id"        || true; done
+# Status code from a DELETE without curl -f (409 = still in-flight, expected).
+del() { curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $sealed" -H "X-Workspace-Id: $ws" -X DELETE "$api/v1/$1"; }
+# Runs: /v1/runs is the CLI-scoped list (source=cli) and is capped per page, so
+# page until a pass makes no progress. A run whose worker died mid-flight stays
+# non-terminal and returns 409 — skip it (it can't be deleted until it finalizes).
+while :; do
+  rids="$(ids runs runs)"; [ -n "$rids" ] || break
+  progressed=0
+  for id in $rids; do
+    case "$(del "runs/$id")" in 200|204) echo "  - run/$id"; progressed=1;; 409) echo "  - run/$id in-flight (skipped)";; esac
+  done
+  [ "$progressed" = 1 ] || break
+done
 for id in $(ids rollouts rollouts);        do req -o /dev/null -X DELETE "$api/v1/rollouts/$id"    2>/dev/null && echo "  - rollout/$id"    || true; done
 for id in $(ids experiments experiments);  do req -o /dev/null -X DELETE "$api/v1/experiments/$id" 2>/dev/null && echo "  - experiment/$id" || true; done
 for id in $(ids shadows shadows);          do req -o /dev/null -X DELETE "$api/v1/shadows/$id"     2>/dev/null && echo "  - shadow/$id"     || true; done
