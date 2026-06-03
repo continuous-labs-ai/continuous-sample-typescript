@@ -90,3 +90,8 @@ login:
 # Worker subscriptions + their queue identity (diagnose "awaiting" cells).
 workers:
     continuous workers list
+
+# Reset the demo org — cancel + delete all runs/rollouts/experiments/shadows and
+# close the v3 PR (keeps the org + install). Needs `continuous login` + gh + python3.
+clean:
+    ./clean.sh
