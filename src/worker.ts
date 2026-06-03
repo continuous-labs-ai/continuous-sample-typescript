@@ -5,7 +5,7 @@
 // variant. The factory reads `task.variant` — the only channel the SDK uses to
 // tell the worker which composition to run — loads that variant's
 // `model x prompt x skill`, runs the Anthropic Claude Agent SDK, and returns the
-// trajectory. Continuous judges it server-side against `evals/judge.md`.
+// trajectory. Continuous judges it server-side against `evals/support-judge.md`.
 //
 // Run it (from the repo root) with both keys in the environment:
 //
