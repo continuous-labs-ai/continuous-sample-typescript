@@ -78,7 +78,7 @@ export async function main(argv: string[]): Promise<void> {
       const started = Date.now();
       const { trajectory, usage } = await runVariant(spec, question);
       const durationMs = Date.now() - started;
-      client.reportTrajectory(routing, trajectory, {
+      client.reportTask(routing, trajectory, {
         judged_by: "server",
         duration_ms: durationMs,
         usage,
