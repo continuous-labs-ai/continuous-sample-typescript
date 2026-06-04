@@ -1,20 +1,10 @@
-// Load the agent + variant compositions from the repo's declarative config.
-//
-// The unit Continuous ships is the full `model x prompt x skill` composition.
-// Each variant is a directory under `agent/variants/<name>/` holding a
-// `variant.yaml` (model + which skills to load) and a `prompt.md` (the system
-// prompt). The declared variant list comes from `.continuous/config.yml` — the
-// same file the Continuous server uses as the variant catalog — so the worker
-// subscribes to exactly the variants the platform knows about.
-
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
-// src/variants.ts (tsx) and dist/variants.js (built) both sit one level under
-// the repo root. The Agent SDK resolves .claude/skills relative to this.
+// Derived so the Agent SDK resolves .claude/skills relative to the repo root.
 export const REPO_ROOT =
   process.env.SAMPLE_REPO_ROOT ?? resolve(moduleDir, "..");
 const CONFIG_PATH = join(REPO_ROOT, ".continuous", "config.yml");

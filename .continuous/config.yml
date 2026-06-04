@@ -17,7 +17,7 @@ evals:
   - name: billing-support
     agent: support-agent
     dataset: evals/support.jsonl
-    judge: evals/judge.md
+    judge: evals/support-judge.md
     on: auto
     dispatch: on-demand
     block_pr: true
@@ -26,5 +26,5 @@ evals:
     dataset: evals/escalation.jsonl
     judge: evals/escalation-judge.md
     on: auto
-    dispatch: on-demand
+    dispatch: auto
     block_pr: false

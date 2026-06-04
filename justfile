@@ -12,7 +12,7 @@
 set dotenv-load := true
 
 agent := "support-agent"
-judge := "evals/judge.md"
+judge := "evals/support-judge.md"
 
 # List the recipes.
 default:

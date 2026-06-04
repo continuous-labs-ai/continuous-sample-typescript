@@ -30,7 +30,7 @@ them. So v1 and v2 confidently invent plausible-but-wrong specifics (a
 "30-day refund" when the real window is 14 days), while **v3** reads the
 [`billing-policy` skill](https://github.com/continuous-labs-ai/continuous-sample-typescript/blob/add-v3-billing-skill/.claude/skills/billing-policy/SKILL.md) and gets the
 exact terms right. The eval set ([`evals/support.jsonl`](evals/support.jsonl),
-scored by [`evals/judge.md`](evals/judge.md)) is built so **v1 < v2 < v3**.
+scored by [`evals/support-judge.md`](evals/support-judge.md)) is built so **v1 < v2 < v3**.
 
 ## How it works
 
@@ -44,7 +44,7 @@ startWorkersForVariants(worker, ["v1", "v2"]); // one poll loop per variant
 The factory reads `task.variant`, composes that variant's
 `model × prompt × skill` into the Agent SDK `Options`, runs the Claude Agent SDK,
 and returns the trajectory. Continuous judges it server-side against
-`evals/judge.md`.
+`evals/support-judge.md`.
 
 ## Setup
 
@@ -94,7 +94,7 @@ five flows packaged as `just` recipes (`just --list`) — lives in
 .continuous/rollouts.yml      # CD ramp plans
 agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
 evals/support.jsonl           # primary eval dataset: {name, input, expected_output}
-evals/judge.md                # support rubric: did the agent take the correct action? (binary)
+evals/support-judge.md                # support rubric: did the agent take the correct action? (binary)
 evals/escalation.jsonl        # second, non-blocking eval: escalate-vs-handle scenarios
 evals/escalation-judge.md     # escalation rubric: did the agent escalate correctly? (binary)
 src/                          # the worker (CI) + simulator (CD)

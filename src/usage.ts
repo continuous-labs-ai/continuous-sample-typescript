@@ -1,7 +1,6 @@
 import type { Usage } from "@continuous/sdk";
 
-// The Claude Agent SDK's per-model token report (camelCase). Typed locally so we
-// don't depend on whether the SDK re-exports ModelUsage.
+// Typed locally so we don't depend on whether the SDK re-exports ModelUsage.
 interface ModelUsage {
   inputTokens: number;
   outputTokens: number;
@@ -15,8 +14,7 @@ export function usageFromModelUsage(
   if (!modelUsage) return undefined;
   const models = Object.entries(modelUsage).map(([model, u]) => ({
     model,
-    // Cache-creation tokens are billed near the input rate and the Usage model
-    // has no separate cache-write field, so fold them into input.
+    // Usage has no separate cache-write field, so fold cache-creation into input.
     input_tokens: u.inputTokens + u.cacheCreationInputTokens,
     cached_tokens: u.cacheReadInputTokens,
     output_tokens: u.outputTokens,

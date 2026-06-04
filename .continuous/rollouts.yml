@@ -3,7 +3,7 @@ plans:
   # for live judgments before each gate — but an operator can `advance`, `pause`,
   # or `rollback` at any time (operator actions override a pending bake, 0004 §11).
   - name: ramp
-    judge: evals/judge.md
+    judge: evals/support-judge.md
     bake: 30m
     stages:
       - 10
@@ -14,7 +14,7 @@ plans:
   # Fast ramp for an autonomous-canary demo: 2-minute bakes so the Canary Agent
   # gates on real traffic quickly. Pair with `npm run simulate`.
   - name: ramp-fast
-    judge: evals/judge.md
+    judge: evals/support-judge.md
     bake: 2m
     stages:
       - 10
