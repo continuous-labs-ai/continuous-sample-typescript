@@ -76,9 +76,9 @@ export async function main(argv: string[]): Promise<void> {
       const spec = specs.get(routing.variant);
       if (!spec) throw new Error(`unknown variant: ${routing.variant}`);
       const started = Date.now();
-      const { trajectory, usage } = await runVariant(spec, question);
+      const { steps, usage } = await runVariant(spec, question);
       const durationMs = Date.now() - started;
-      client.reportTask(routing, trajectory, {
+      client.reportTask(routing, steps, {
         judged_by: "server",
         duration_ms: durationMs,
         usage,
