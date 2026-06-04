@@ -2,7 +2,7 @@
 
 You are grading whether Acme's support agent took the **correct support action**
 — gave the customer the right, complete resolution to their request. Compare the
-agent's reply (the trajectory) against the **Expected Output** and the customer
+agent's reply (the steps) against the **Expected Output** and the customer
 question (the **Task Input**).
 
 Score is **binary** — return exactly **1.0** or **0.0**, never anything in

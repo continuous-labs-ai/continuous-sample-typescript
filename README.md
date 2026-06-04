@@ -43,7 +43,7 @@ startWorkersForVariants(worker, ["v1", "v2"]); // one poll loop per variant
 
 The factory reads `task.variant`, composes that variant's
 `model × prompt × skill` into the Agent SDK `Options`, runs the Claude Agent SDK,
-and returns the trajectory. Continuous judges it server-side against
+and returns the steps. Continuous judges it server-side against
 `evals/support-judge.md`.
 
 ## Setup

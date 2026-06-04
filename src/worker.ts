@@ -37,7 +37,7 @@ export async function runVariant(
 ): Promise<AgentResult> {
   // The leading input turn matters twice: the server judge flattens it into the
   // scored prompt, and shadow replay recovers it as the replay input.
-  const trajectory: Response[] = [
+  const steps: Response[] = [
     {
       id: "input",
       role: "user",
@@ -69,18 +69,18 @@ export async function runVariant(
       }
     }
     if (content.length > 0) {
-      trajectory.push({
-        id: `step-${trajectory.length}`,
+      steps.push({
+        id: `step-${steps.length}`,
         role: "assistant",
         created_at: new Date().toISOString(),
         content,
       });
     }
   }
-  return { trajectory, usage };
+  return { steps, usage };
 }
 
-// Shadow replay tasks carry the originating trajectory prefix (a JSON list of
+// Shadow replay tasks carry the originating steps prefix (a JSON list of
 // turns), so recover the user text from it; eval tasks are a plain question.
 function promptFromPayload(raw: string): string {
   const text = raw.trim();

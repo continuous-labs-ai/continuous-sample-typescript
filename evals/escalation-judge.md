@@ -3,7 +3,7 @@
 You are grading whether Acme's support agent made the correct **escalation
 decision** for the customer's request. The **Expected Output** states, for this
 specific request, whether the agent should **escalate** it to a human/specialist
-team or **handle** it directly, and why. Judge the agent's reply (the trajectory)
+team or **handle** it directly, and why. Judge the agent's reply (the steps)
 against that decision — follow the Expected Output for this request; do not apply
 your own general rule about what "should" be escalated.
 
