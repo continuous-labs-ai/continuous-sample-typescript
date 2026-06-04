@@ -1,5 +1,5 @@
 agents:
-  - name: support-agent
+  - name: support-agent-ts
     variants:
       # Each variant is a full model × prompt × skill composition. On a PR,
       # `on: auto` (below) runs a relevance triage to pick which variants' eval
@@ -15,14 +15,14 @@ agents:
 
 evals:
   - name: billing-support
-    agent: support-agent
+    agent: support-agent-ts
     dataset: evals/support.jsonl
     judge: evals/support-judge.md
     on: auto
     dispatch: on-demand
     block_pr: true
   - name: escalation
-    agent: support-agent
+    agent: support-agent-ts
     dataset: evals/escalation.jsonl
     judge: evals/escalation-judge.md
     on: auto
