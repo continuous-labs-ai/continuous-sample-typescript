@@ -11,7 +11,6 @@ const CONFIG_PATH = join(REPO_ROOT, ".continuous", "config.yml");
 const VARIANTS_DIR = join(REPO_ROOT, "agent", "variants");
 
 export interface VariantSpec {
-  name: string;
   model: string;
   systemPrompt: string;
   skills: string[];
@@ -35,13 +34,9 @@ export function loadAgentName(): string {
   return loadConfig().agents[0].name;
 }
 
-export function loadDeclaredVariants(): string[] {
-  return loadConfig().agents[0].variants.map((v) => v.name);
-}
-
 export function loadVariants(): Map<string, VariantSpec> {
   const specs = new Map<string, VariantSpec>();
-  for (const name of loadDeclaredVariants()) {
+  for (const { name } of loadConfig().agents[0].variants) {
     const vdir = join(VARIANTS_DIR, name);
     const meta = parse(
       readFileSync(join(vdir, "variant.yaml"), "utf8"),
@@ -49,7 +44,6 @@ export function loadVariants(): Map<string, VariantSpec> {
     const promptFile = meta.prompt ?? "prompt.md";
     const systemPrompt = readFileSync(join(vdir, promptFile), "utf8").trim();
     specs.set(name, {
-      name,
       model: meta.model,
       systemPrompt,
       skills: meta.skills ?? [],
