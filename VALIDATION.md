@@ -38,8 +38,8 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
   with a GitHub account in `continuous-labs-ai`; sign-in provisions it.
 - A **worker key** — Dashboard → workspace → **Admin → Worker API keys** → **Mint**
   (shown once).
-- Your `.continuous/config.yml` (+ `rollouts.yml`) live on `main`. There is no
-  catalog or plan mirror to register — creates snapshot variants + judge from a
+- Your `.continuous/config.yml` lives on `main`. There is no catalog or plan
+  mirror to register — creates snapshot variants + judge from a
   `(repo, sha)` (blank sha = the default-branch HEAD). The dashboard derives
   `support-agent`'s variants from its runs; `main_variant` is seeded the first time
   you start a rollout/experiment/shadow.
@@ -104,7 +104,7 @@ Continuous posts a check-run + a comment with an **eval × variant** table.
 ### C — Rollout (CD, with traffic)
 
 ```bash
-just rollout                # starts v1→v2 (plan ramp-fast), drives traffic, prints status
+just rollout                # starts v1→v2 (fast 2m-bake ramp), drives traffic, prints status
 ```
 A staged canary promotes v2 over the v1 baseline. **Expect:**
 `continuous rollout show <id>` shows the canary gating on real judgments. Operator

@@ -105,8 +105,7 @@ function promptFromPayload(raw: string): string {
   return raw;
 }
 
-function buildFactory() {
-  const specs = loadVariants();
+function buildFactory(specs: Map<string, VariantSpec>) {
   return async (task: Task): Promise<AgentResult> => {
     const spec = specs.get(task.variant);
     if (!spec) throw new Error(`unknown variant: ${task.variant}`);
@@ -116,13 +115,14 @@ function buildFactory() {
 
 export async function main(): Promise<void> {
   const agent = loadAgentName();
+  const specs = loadVariants();
   const worker = new ManagedAgentWorker({
     agent,
-    agentFactory: buildFactory(),
+    agentFactory: buildFactory(specs),
   });
   // A single all-variants subscription avoids the (workspace,agent,queue,client)
   // collision that clobbers `variants`, stranding shadow replays on a queue no worker serves.
-  const variants = [...loadVariants().keys()];
+  const variants = [...specs.keys()];
   const handle = startWorker(worker, { variants });
   console.log(
     `support-agent worker up: agent=${agent} variants=${variants.join(",")}`,

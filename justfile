@@ -52,29 +52,32 @@ pr:
       --title "Add v3: billing-policy skill" -F .github/PR_BODY_v3.md
 
 # C — CD rollout v1 → v2, driving live canary traffic, then the rollout status.
-rollout candidate="v2" plan="ramp-fast" traffic="40":
+# Fast ramp: 2-minute bakes so the Canary Agent gates on real traffic quickly.
+rollout candidate="v2" traffic="40":
     #!/usr/bin/env bash
     set -euo pipefail
-    out=$(continuous rollout start {{agent}} {{candidate}} --plan {{plan}}); echo "$out"
+    out=$(continuous rollout start {{agent}} {{candidate}} --judge {{judge}} \
+      --stage traffic=10,bake=2m --stage traffic=25,bake=2m \
+      --stage traffic=50,bake=2m --stage traffic=100); echo "$out"
     id=$(echo "$out" | sed -n 's/^Started \([^ .]*\).*/\1/p')
     npm run simulate -- {{traffic}}
     continuous rollout show "$id"
 
 # D — experiment: split a traffic slice across variants, drive traffic, show the report.
-experiment slice="40" variants="v1=50,v2=50" deadline="1h" traffic="40":
+experiment name="v1-vs-v2" slice="40" variants="v1=50,v2=50" deadline="1h" traffic="40":
     #!/usr/bin/env bash
     set -euo pipefail
-    out=$(continuous experiment start {{agent}} --slice {{slice}} --variants {{variants}} --judge {{judge}} --deadline {{deadline}}); echo "$out"
+    out=$(continuous experiment start {{agent}} --name {{name}} --slice {{slice}} --variants {{variants}} --judge {{judge}} --deadline {{deadline}}); echo "$out"
     id=$(echo "$out" | sed -n 's/^Started \([^ .]*\).*/\1/p')
     npm run simulate -- {{traffic}}
     continuous experiment show "$id"
 
 # E — shadow: sample v1 traffic, replay through the candidate out of band, show the
 # paired report. Needs `just worker` running (it executes the replays).
-shadow candidates="v2" sample="100" deadline="1h" traffic="24":
+shadow name="shadow-v2" candidates="v2" sample="100" deadline="1h" traffic="24":
     #!/usr/bin/env bash
     set -euo pipefail
-    out=$(continuous shadow start {{agent}} --candidates {{candidates}} --sample {{sample}} --judge {{judge}} --deadline {{deadline}} --confirm); echo "$out"
+    out=$(continuous shadow start {{agent}} --name {{name}} --candidates {{candidates}} --sample {{sample}} --judge {{judge}} --deadline {{deadline}} --confirm); echo "$out"
     id=$(echo "$out" | sed -n 's/^Started \([^ .]*\).*/\1/p')
     npm run simulate -- {{traffic}}
     echo "↻ replays land over a few minutes — re-run for the full report:"
