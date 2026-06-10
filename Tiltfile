@@ -23,4 +23,4 @@ docker_build(
 
 docker_compose('docker-compose.yml')
 dc_resource('worker', labels=['agent'])
-dc_resource('simulate', labels=['agent'], auto_init=False)  # CD only; trigger manually
+dc_resource('simulate', labels=['agent'], auto_init=False)  # traffic for replay/shadow/monitor; trigger manually

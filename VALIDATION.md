@@ -1,11 +1,19 @@
 # Acme billing-support demo — validate the five flows
 
 The runbook + validation guide for taking the Acme billing-support agent through
-Continuous end-to-end against the **dev** stack. It covers the four post-merge
-features — **eval** (A/B), **rollout** (C), **experiment** (D), **shadow** (E) —
-across five runnable flows. Each flow is one `just` recipe (`just --list`); the
-rollout/experiment/shadow recipes also drive the production traffic and print the
-report, so there's no second command to run.
+Continuous end-to-end against the **dev** stack. It covers the five v2 flows —
+**local CLI eval** (A), **CI PR eval** (B), **replay** (C), **shadow** (D),
+**monitor** (E). Each flow is one `just` recipe (`just --list`); the
+replay/shadow/monitor recipes also drive the production traffic they need and
+print the report, so there's no second command to run.
+
+| Flow | Recipe | Status |
+| ---- | ------ | ------ |
+| A — local CLI eval | `just eval` | **PENDING re-validation** |
+| B — CI PR eval | `just pr` | **PENDING re-validation** |
+| C — replay | `just replay` | **PENDING re-validation** |
+| D — shadow | `just shadow` | **PENDING re-validation** |
+| E — monitor | `just monitor` | **PENDING re-validation** |
 
 A Python twin lives in `continuous-sample-python/VALIDATION.md` — same flows,
 `uv` instead of `npm`.
@@ -16,8 +24,8 @@ The shipped unit is a full **model × prompt × skill** composition, not a model
 
 | Variant | Model | Prompt | Skill | Role in the demo |
 | ------- | ----- | ------ | ----- | ---------------- |
-| **v1** | Haiku 4.5 (`claude-haiku-4-5-20251001`) | terse, generic | — | weak baseline / `main_variant` |
-| **v2** | Sonnet 4.6 (`claude-sonnet-4-6`) | policy-aware | — | **CD candidate** (rollout v1 → v2) |
+| **v1** | Haiku 4.5 (`claude-haiku-4-5-20251001`) | terse, generic | — | weak baseline / production traffic |
+| **v2** | Sonnet 4.6 (`claude-sonnet-4-6`) | policy-aware | — | **shadow candidate** (replayed against v1) |
 | **v3** | Sonnet 4.6 | same as v2 | **`billing-policy`** | **CI candidate** (the PR) |
 
 `main` declares **v1 + v2**. Branch **`add-v3-billing-skill`** is pre-pushed and
@@ -38,11 +46,9 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
   with a GitHub account in `continuous-labs-ai`; sign-in provisions it.
 - A **worker key** — Dashboard → workspace → **Admin → Worker API keys** → **Mint**
   (shown once).
-- Your `.continuous/config.yml` lives on `main`. There is no catalog or plan
-  mirror to register — creates snapshot variants + judge from a
-  `(repo, sha)` (blank sha = the default-branch HEAD). The dashboard derives
-  `support-agent`'s variants from its runs; `main_variant` is seeded the first time
-  you start a rollout/experiment/shadow.
+- Your `.continuous/config.yml` lives on `main`. Creates snapshot variants + judge
+  from a `(repo, sha)` (blank sha = the default-branch HEAD). The dashboard derives
+  `support-agent-ts`'s variants from its runs.
 
 ### Local
 
@@ -62,6 +68,9 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
    CONTINUOUS_API_KEY=<worker key>
    ANTHROPIC_API_KEY=<key with Haiku 4.5 + Sonnet 4.6>
    ```
+   `ANTHROPIC_API_KEY` also feeds the SDK's in-process rubric judge; override
+   with `CONTINUOUS_JUDGE_API_KEY` / `CONTINUOUS_JUDGE_BASE_URL` /
+   `CONTINUOUS_JUDGE_MODEL` to judge against a different endpoint or model.
 4. **Deps:** `npm install`.
 
 ### Queue identity (why two workers)
@@ -70,14 +79,14 @@ A worker only receives Tasks whose **queue string matches its own**, auto-derive
 
 | Recipe | Queue | Use |
 | ------ | ----- | --- |
-| `just worker` | `user:<you>@<host>` (no `CONTINUOUS_GIT_SHA`) | local dev — eval (A) + shadow (E) |
+| `just worker` | `user:<you>@<host>` (no `CONTINUOUS_GIT_SHA`) | local dev — eval (A), replay (C), shadow (D), monitor (E) |
 | `just ci-worker` | `sha:<HEAD>` (`CONTINUOUS_GIT_SHA=$(git rev-parse HEAD)`) | a PR Run dispatches to `sha:<pr_head>` — CI (B) |
 
 A cell stuck "awaiting" almost always means a queue mismatch.
 
 ## The five flows
 
-### A — Eval (CLI)
+### A — Local CLI eval
 
 ```bash
 just worker                 # terminal 1 — serves the dispatched eval tasks
@@ -85,9 +94,10 @@ just eval billing-support   # terminal 2
 ```
 Author evals as code (dataset + judge + `config.yml` entry) and score every variant
 locally, no PR. **Expect:** a Run with 20 tasks (10 scenarios × v1/v2);
-`continuous runs show <run_id>` shows each `succeeded` with a verdict (v1/v2 `fail`).
+`continuous runs show <run_id>` shows each `succeeded` with a worker-judged
+verdict (v1/v2 `fail`).
 
-### B — CI (GitHub PR — on-demand **and** auto)
+### B — CI PR eval (on-demand **and** auto)
 
 ```bash
 git checkout add-v3-billing-skill
@@ -101,26 +111,19 @@ Continuous posts a check-run + a comment with an **eval × variant** table.
   `billing-support · v3` → it dispatches + judges → `✓ pass` (the skill earns its
   place; v1/v2 `✗ fail`). `billing-support` (`block_pr: true`) gates the merge.
 
-### C — Rollout (CD, with traffic)
+### C — Replay (with traffic)
 
 ```bash
-just rollout                # starts v1→v2 (fast 2m-bake ramp), drives traffic, prints status
+just worker                 # terminal 1 — executes the replay tasks
+just replay                 # terminal 2 — drives traffic, then runs the replay-window eval
 ```
-A staged canary promotes v2 over the v1 baseline. **Expect:**
-`continuous rollout show <id>` shows the canary gating on real judgments. Operator
-actions: `continuous rollout advance|pause|resume|rollback <id>`.
+The `replay-recent` eval has no JSONL file: its dataset is generated at
+Run-creation from the last 24h of recorded production traffic (the rows
+`client.reportTask` captured), and every variant re-runs those real inputs.
+**Expect:** a Run whose task inputs are the recorded questions; v2 outscores v1
+on identical traffic.
 
-### D — Experiment (with traffic)
-
-```bash
-just experiment             # carves a 40% lane (v1=50/v2=50), drives traffic, prints the report
-```
-Where a rollout is *asymmetric* (one candidate ramping over one baseline), an
-**experiment** is *symmetric*: a fixed traffic slice split across ≥2 variants, each
-judged independently. **Expect:** the per-variant report shows **v2 success_rate >
-v1** on identical live traffic; the rest of traffic stays on `main`.
-
-### E — Shadow (with traffic)
+### D — Shadow (with traffic)
 
 ```bash
 just worker                 # terminal 1 — required; it executes the replays
@@ -132,9 +135,22 @@ arms against one rubric. **Expect:** baseline vs candidate arms + a **paired** s
 (`candidate_wins`, `mean_score_delta > 0`). Replays run the real agent (~minutes),
 so re-run `continuous shadow show <id>` as the candidate arm fills.
 
+### E — Monitor (with traffic)
+
+```bash
+just worker                 # terminal 1 — executes the probe replays
+just monitor                # terminal 2 — drives traffic, creates the monitor, backfills the last day
+```
+A **monitor** holds one variant under a scheduled judge: each period it draws
+recorded traffic, re-runs the held variant, and scores the results into a
+success-rate series. The recipe backfills the last day so the first points cover
+the traffic it just drove. **Expect:** `just monitor-show <id>` fills with
+per-period points (success_rate per point) over a few minutes; the dashboard
+shows the series with drill-down into failing tasks.
+
 ## Where to watch
 
 - **Runs / PR evals:** `https://dashboard-dev.continuouslabs.ai/w/<wsId>` → Runs, and the GitHub PR.
-- **Rollouts / Experiments / Shadows:** the dashboard views, or `continuous {rollout|experiment|shadow} show <id>`.
+- **Shadows / Monitors:** the dashboard views, `continuous shadow show <id>`, or `just monitor-show <id>`.
 - **Workers:** `just workers` (subscriptions + their queue identity).
-- **Cost:** the worker reports each run's token usage; the platform prices it per model (a dated snapshot resolves to its family rate) into the cost block shown beside latency and pass-rate on the run page and every CD surface.
+- **Cost:** the worker reports each run's token usage; the platform prices it per model (a dated snapshot resolves to its family rate) into the cost block shown beside latency and pass-rate on the run page and the production surfaces.

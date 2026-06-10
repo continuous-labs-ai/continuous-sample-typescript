@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { Client, type Routing } from "@continuous/sdk";
+import { Client } from "@continuous/sdk";
 import { loadAgentName, loadVariants } from "./variants.js";
 import { runVariant } from "./worker.js";
 
@@ -13,10 +13,6 @@ const QUESTIONS = [
   "If I cancel now do I lose access immediately?",
   "I bought annual two weeks ago and want out. Refund?",
 ];
-
-function lane(routing: Routing): string {
-  return routing.source?.kind ?? "main";
-}
 
 function parseDurationMs(spec: string): number {
   const units: Record<string, number> = { s: 1_000, m: 60_000, h: 3_600_000 };
@@ -50,18 +46,25 @@ function parseArgs(argv: string[]): Options {
   return { total: count ?? 30, deadline: null, concurrency };
 }
 
+// Every 4th simulated user rates the answer — that thumbs rating rides the row
+// as its self_report (reason requires score).
+function selfReport(i: number): { score?: number; reason?: string } {
+  if (i % 4 !== 0) return {};
+  return i % 12 === 0
+    ? { score: 0, reason: "user marked the answer unhelpful" }
+    : { score: 1, reason: "user marked the answer helpful" };
+}
+
 export async function main(argv: string[]): Promise<void> {
   const { total, deadline, concurrency } = parseArgs(argv);
   const agent = loadAgentName();
-  const specs = loadVariants();
+  // Production serves the baseline — the first declared variant (v1 on main).
+  const [variant, spec] = [...loadVariants().entries()][0];
   const client = new Client();
 
-  const served = new Map<string, number>();
-  const lanes = new Map<string, number>();
-  const bump = (m: Map<string, number>, k: string) =>
-    m.set(k, (m.get(k) ?? 0) + 1);
   let nextI = 0;
   let done = 0;
+  let rated = 0;
 
   const take = (): number | null => {
     if (deadline !== null && Date.now() >= deadline) return null;
@@ -72,22 +75,21 @@ export async function main(argv: string[]): Promise<void> {
   async function pump(): Promise<void> {
     for (let i = take(); i !== null; i = take()) {
       const question = QUESTIONS[i % QUESTIONS.length];
-      const routing = await client.getVariant(agent, `sim-user-${i}`);
-      const spec = specs.get(routing.variant);
-      if (!spec) throw new Error(`unknown variant: ${routing.variant}`);
       const started = Date.now();
       const { steps, usage } = await runVariant(spec, question);
       const durationMs = Date.now() - started;
-      client.reportTask(routing, steps, {
-        judged_by: "server",
+      const report = selfReport(i);
+      client.reportTask(agent, steps, {
         duration_ms: durationMs,
         usage,
+        ...report,
       });
       done++;
-      bump(served, routing.variant);
-      bump(lanes, lane(routing));
+      if (report.score !== undefined) rated++;
+      const ratedNote =
+        report.score !== undefined ? ` self_report=${report.score}` : "";
       console.log(
-        `[${String(done).padStart(4)}] ${routing.variant.padEnd(4)} ${lane(routing).padEnd(10)} ${String(durationMs).padStart(6)}ms`,
+        `[${String(done).padStart(4)}] ${variant.padEnd(4)} ${String(durationMs).padStart(6)}ms${ratedNote}`,
       );
     }
   }
@@ -100,13 +102,8 @@ export async function main(argv: string[]): Promise<void> {
     await client.close();
   }
 
-  const fmt = (m: Map<string, number>) =>
-    [...m.keys()]
-      .sort()
-      .map((k) => `${k}=${m.get(k)}`)
-      .join(" ");
   console.log(
-    `\nsent ${done} trajectories — variants [${fmt(served)}] — lanes [${fmt(lanes)}]`,
+    `\nsent ${done} tasks — variant ${variant} — ${rated} self-reported`,
   );
 }
 

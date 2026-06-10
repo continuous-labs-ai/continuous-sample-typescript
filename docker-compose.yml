@@ -15,10 +15,16 @@ services:
       # Preview/production deploy: set to the PR head SHA for the CI demo so the
       # worker lands on queue sha:<head_sha>. Tilt sets this from `git_sha`.
       CONTINUOUS_GIT_SHA: ${CONTINUOUS_GIT_SHA:?set CONTINUOUS_GIT_SHA to the deploy/PR head SHA}
+      # The SDK's in-process rubric judge scores claimed tasks against your own
+      # judge model endpoint. The key falls back to ANTHROPIC_API_KEY (.env);
+      # base URL / model have SDK defaults.
+      CONTINUOUS_JUDGE_API_KEY: ${CONTINUOUS_JUDGE_API_KEY:-}
+      CONTINUOUS_JUDGE_BASE_URL: ${CONTINUOUS_JUDGE_BASE_URL:-}
+      CONTINUOUS_JUDGE_MODEL: ${CONTINUOUS_JUDGE_MODEL:-}
 
-  # Production-traffic simulator for the CD demo (queue-independent — it reports
-  # trajectories rather than polling). Start on demand:
-  #   docker compose --profile cd up simulate
+  # Production-traffic simulator for the replay/shadow/monitor demos
+  # (queue-independent — it reports tasks rather than polling). Start on demand:
+  #   docker compose --profile traffic up simulate
   simulate:
     image: continuous-sample-typescript-worker
     build:
@@ -28,4 +34,4 @@ services:
     environment:
       CONTINUOUS_API_KEY: ${CONTINUOUS_API_KEY:-}
     command: ["npm", "run", "simulate", "--", "40"]
-    profiles: ["cd"]
+    profiles: ["traffic"]

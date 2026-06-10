@@ -35,8 +35,8 @@ export async function runVariant(
   spec: VariantSpec,
   agentInput: string,
 ): Promise<AgentResult> {
-  // The leading input turn matters twice: the server judge flattens it into the
-  // scored prompt, and shadow replay recovers it as the replay input.
+  // The leading input turn matters twice: the SDK rubric judge flattens it into
+  // the scored prompt, and replay/shadow recover it as the replay input.
   const steps: Response[] = [
     {
       id: "input",
@@ -80,8 +80,8 @@ export async function runVariant(
   return { steps, usage };
 }
 
-// Shadow replay tasks carry the originating steps prefix (a JSON list of
-// turns), so recover the user text from it; eval tasks are a plain question.
+// Replay-window and shadow tasks carry the recorded leading turns (a JSON
+// list), so recover the user text from them; dataset tasks are a plain question.
 function promptFromPayload(raw: string): string {
   const text = raw.trim();
   if (text.startsWith("[")) {
@@ -120,16 +120,12 @@ export async function main(): Promise<void> {
     agent,
     agentFactory: buildFactory(specs),
   });
-  // A single all-variants subscription avoids the (workspace,agent,queue,client)
-  // collision that clobbers `variants`, stranding shadow replays on a queue no worker serves.
-  const variants = [...specs.keys()];
-  const handle = startWorker(worker, { variants });
+  // One unfiltered subscription serves every declared variant on this queue;
+  // the SDK wires SIGTERM/SIGINT for graceful shutdown.
+  const handle = startWorker(worker);
   console.log(
-    `support-agent worker up: agent=${agent} variants=${variants.join(",")}`,
+    `support-agent worker up: agent=${agent} variants=${[...specs.keys()].join(",")}`,
   );
-  process.on("SIGINT", () => {
-    void handle.stop();
-  });
   await handle.done();
 }
 

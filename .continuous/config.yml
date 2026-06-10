@@ -28,3 +28,15 @@ evals:
     on: auto
     dispatch: auto
     block_pr: false
+  # A replay-window eval has no JSONL file: the dataset is generated at
+  # Run-creation from the last day of recorded production traffic (the rows
+  # client.reportTask captured), newest-first up to `limit`. The judge is
+  # required — recorded rows carry no expected_output to self-check against.
+  - name: replay-recent
+    agent: support-agent-ts
+    replay:
+      window: 24h
+    judge: evals/support-judge.md
+    on: auto
+    dispatch: on-demand
+    block_pr: false

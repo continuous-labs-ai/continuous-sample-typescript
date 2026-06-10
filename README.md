@@ -7,8 +7,9 @@ SaaS company, built on the **Anthropic Claude Agent SDK** and served through the
 
 The point of the sample: the thing you ship is not a model, it's a full
 **`model × prompt × skill`** composition — a *variant*. Continuous runs each
-variant against an eval set in CI and ramps the winner into production with a
-staged CD rollout.
+variant against an eval set in CI, replays recorded production traffic through
+it, shadows candidates against the live baseline, and monitors the shipped
+variant on a schedule.
 
 > A Python twin of this repo lives at **continuous-sample-python** — same
 > scenario, same variants, mirror-image SDK.
@@ -21,8 +22,8 @@ one axis at a time, so the eval scores tell a clean story:
 
 | Variant | Model | Prompt | Skill | Role |
 | ------- | ----- | ------ | ----- | ---- |
-| **v1** | Haiku 4.5 | terse, generic | — | weak baseline |
-| **v2** | Sonnet 4.6 | policy-aware, empathetic | — | **CD candidate** (v1 → v2) |
+| **v1** | Haiku 4.5 | terse, generic | — | weak baseline (production traffic) |
+| **v2** | Sonnet 4.6 | policy-aware, empathetic | — | **shadow candidate** (replayed against v1) |
 | **v3** | Sonnet 4.6 | same as v2 | **`billing-policy`** | **CI candidate** (the PR) |
 
 Acme's real refund/proration/trial rules are proprietary — the model can't guess
@@ -37,14 +38,16 @@ scored by [`evals/support-judge.md`](evals/support-judge.md)) is built so **v1 <
 [`src/worker.ts`](src/worker.ts) is the whole integration:
 
 ```ts
-const worker = new ManagedAgentWorker({ agent: "support-agent", agentFactory });
-startWorkersForVariants(worker, ["v1", "v2"]); // one poll loop per variant
+const worker = new ManagedAgentWorker({ agent: "support-agent-ts", agentFactory });
+startWorker(worker); // one subscription serves every declared variant
 ```
 
 The factory reads `task.variant`, composes that variant's
 `model × prompt × skill` into the Agent SDK `Options`, runs the Claude Agent SDK,
-and returns the steps. Continuous judges it server-side against
-`evals/support-judge.md`.
+and returns the steps. The SDK's in-process rubric judge then scores them
+against `evals/support-judge.md` — judging happens on the worker, against your
+own judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back to
+`ANTHROPIC_API_KEY`), before the result is reported.
 
 ## Setup
 
@@ -83,20 +86,21 @@ five flows packaged as `just` recipes (`just --list`) — lives in
 - **A — Eval:** score every variant locally with `just eval` (no PR).
 - **B — CI:** open the pre-staged `add-v3-billing-skill` PR (`just pr`); pick which
   eval cells to dispatch from the PR comment (on-demand + auto); scores gate the merge.
-- **C — Rollout:** `just rollout` — ramp v1 → v2 with live canary traffic.
-- **D — Experiment:** `just experiment` — A/B v1 vs v2 on a live traffic slice.
-- **E — Shadow:** `just shadow` — replay sampled traffic through the candidate, out of band.
+- **C — Replay:** `just replay` — re-score the last day of recorded production
+  traffic through every variant.
+- **D — Shadow:** `just shadow` — replay sampled traffic through the candidate, out of band.
+- **E — Monitor:** `just monitor` — hold the shipped variant under a scheduled judge.
 
 ## Layout
 
 ```
-.continuous/config.yml        # agent + variants + the eval
+.continuous/config.yml        # agent + variants + the evals (incl. the replay window)
 agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
 evals/support.jsonl           # primary eval dataset: {name, input, expected_output}
 evals/support-judge.md                # support rubric: did the agent take the correct action? (binary)
 evals/escalation.jsonl        # second, non-blocking eval: escalate-vs-handle scenarios
 evals/escalation-judge.md     # escalation rubric: did the agent escalate correctly? (binary)
-src/                          # the worker (CI) + simulator (CD)
+src/                          # the worker + production-traffic simulator
 #
 # On the pre-staged add-v3-billing-skill branch (the CI demo):
 #   agent/variants/v3/             # v2 + the billing-policy skill
