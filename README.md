@@ -79,22 +79,22 @@ npm run worker
 
 ## Demos
 
-The full runbook + validation guide — prerequisites, the cast (v1/v2/v3), and the
-five flows packaged as `just` recipes (`just --list`) — lives in
-**[VALIDATION.md](VALIDATION.md)**:
+The canonical runbook — prerequisites, the cast (v1/v2/v3), and the five flows
+packaged as `just` recipes (`just --list`) — lives in **[DEMO.md](DEMO.md)**;
+**[VALIDATION.md](VALIDATION.md)** is the validation log:
 
 - **A — Eval:** score every variant locally with `just eval` (no PR).
 - **B — CI:** open the pre-staged `add-v3-billing-skill` PR (`just pr`); pick which
   eval cells to dispatch from the PR comment (on-demand + auto); scores gate the merge.
-- **C — Replay:** `just replay` — re-score the last day of recorded production
-  traffic through every variant.
-- **D — Shadow:** `just shadow` — replay sampled traffic through the candidate, out of band.
-- **E — Monitor:** `just monitor` — hold the shipped variant under a scheduled judge.
+- **C — Replay:** `just replay` — a replay Run over a window of recorded production
+  traffic; `just replay-set` freezes a named, re-runnable set first.
+- **D — Shadow:** `just shadow` — mirror sampled traffic through the candidate, out of band.
+- **E — Monitor:** `just monitor` — hold the shipped variant and re-score it per period.
 
 ## Layout
 
 ```
-.continuous/config.yml        # agent + variants + the evals (incl. the replay window)
+.continuous/config.yml        # agent + variants + the evals
 agent/variants/v{1,2}/        # one model × prompt × skill composition each (main)
 evals/support.jsonl           # primary eval dataset: {name, input, expected_output}
 evals/support-judge.md                # support rubric: did the agent take the correct action? (binary)
