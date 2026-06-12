@@ -2,8 +2,8 @@
 # Reset this org's Continuous data so the demo runs against clean state.
 #
 # Cancels any in-flight shadows, stops active monitors, deletes every run,
-# shadow and monitor, and closes the pre-staged v3 PR. The org and the GitHub
-# App install are left intact — just clean data to look at.
+# shadow, monitor and replay set, and closes the pre-staged v3 PR. The org and
+# the GitHub App install are left intact — just clean data to look at.
 #
 # This reuses the session `continuous login` already stored; it is deliberately
 # NOT a `continuous` CLI command, just a demo helper. Needs: `continuous login`
@@ -17,7 +17,6 @@ sealed="$(field sealed_session)"
 ws="$(field workspace_id)"
 api="${CONTINUOUS_API_URL:-$(field api_url)}"
 pr_branch="${V3_BRANCH:-add-v3-billing-skill}"
-agent="${AGENT:-support-agent}"
 [ -n "$sealed" ] && [ -n "$ws" ] && [ -n "$api" ] || { echo "missing session/workspace/api_url in $creds — run 'continuous login'" >&2; exit 1; }
 
 req() { curl -fsS -H "Authorization: Bearer $sealed" -H "X-Workspace-Id: $ws" "$@"; }
@@ -30,7 +29,7 @@ for id in $(ids monitors monitors); do req -o /dev/null -X POST "$api/v1/monitor
 
 sleep 4   # let the workflow-driven cancels settle to terminal before deleting
 
-echo "→ deleting runs / shadows / monitors…"
+echo "→ deleting runs / shadows / monitors / replay sets…"
 # Status code from a DELETE without curl -f (409 = still in-flight, expected).
 del() { curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $sealed" -H "X-Workspace-Id: $ws" -X DELETE "$api/v1/$1"; }
 # Runs: /v1/runs is the CLI-scoped list (source=cli) and is capped per page, so
@@ -46,6 +45,7 @@ while :; do
 done
 for id in $(ids shadows shadows);   do req -o /dev/null -X DELETE "$api/v1/shadows/$id"  2>/dev/null && echo "  - shadow/$id"  || true; done
 for id in $(ids monitors monitors); do req -o /dev/null -X DELETE "$api/v1/monitors/$id" 2>/dev/null && echo "  - monitor/$id" || true; done
+for id in $(ids replay-sets replay_sets); do req -o /dev/null -X DELETE "$api/v1/replay-sets/$id" 2>/dev/null && echo "  - replay-set/$id" || true; done
 
 echo "→ closing the v3 demo PR (if open)…"
 if gh pr close "$pr_branch" --comment "demo cleanup" 2>/dev/null; then
