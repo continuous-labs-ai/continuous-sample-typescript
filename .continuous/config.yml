@@ -12,6 +12,10 @@ agents:
       - name: v2
         paths:
           - "agent/variants/v2/**"
+      - name: v3
+        paths:
+          - "agent/variants/v3/**"
+          - ".claude/skills/billing-policy/**"
 
 evals:
   - name: billing-support

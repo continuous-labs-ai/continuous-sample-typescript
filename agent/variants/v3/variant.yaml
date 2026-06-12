@@ -1,0 +1,9 @@
+# Variant v3 — the candidate introduced by the CI demo PR.
+# Same model and prompt family as v2, but adds the `billing-policy` skill. This
+# isolates the *skill* axis: the only thing that changes v2 → v3 is that the
+# agent can now read Acme's real policy, so it stops guessing and gets the exact
+# specifics right.
+model: claude-sonnet-4-6
+prompt: prompt.md
+skills:
+  - billing-policy
