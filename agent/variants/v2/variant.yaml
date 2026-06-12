@@ -1,4 +1,4 @@
-# Variant v2 — the candidate the shadow demo replays v1 traffic through.
+# Variant v2 — the shadow candidate (sampled v1 traffic is mirrored through it).
 # Stronger model and a sharper prompt. Better tone and reasoning than v1, but
 # still has no access to Acme's proprietary policy, so it can still get exact
 # specifics wrong.

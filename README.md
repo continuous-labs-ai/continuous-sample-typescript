@@ -6,10 +6,10 @@ SaaS company, built on the **Anthropic Claude Agent SDK** and served through the
 **Continuous TypeScript Worker SDK**.
 
 The point of the sample: the thing you ship is not a model, it's a full
-**`model × prompt × skill`** composition — a *variant*. Continuous runs each
+**`model × prompt × skill`** composition — a *variant*. Continuous scores each
 variant against an eval set in CI, replays recorded production traffic through
-it, shadows candidates against the live baseline, and monitors the shipped
-variant on a schedule.
+it, mirrors a candidate behind live traffic (shadow), and watches the shipped
+composition for drift (monitor).
 
 > A Python twin of this repo lives at **continuous-sample-python** — same
 > scenario, same variants, mirror-image SDK.
@@ -22,8 +22,8 @@ one axis at a time, so the eval scores tell a clean story:
 
 | Variant | Model | Prompt | Skill | Role |
 | ------- | ----- | ------ | ----- | ---- |
-| **v1** | Haiku 4.5 | terse, generic | — | weak baseline (production traffic) |
-| **v2** | Sonnet 4.6 | policy-aware, empathetic | — | **shadow candidate** (replayed against v1) |
+| **v1** | Haiku 4.5 | terse, generic | — | weak baseline (live traffic) |
+| **v2** | Sonnet 4.6 | policy-aware, empathetic | — | **shadow candidate** (v1 traffic mirrored through it) |
 | **v3** | Sonnet 4.6 | same as v2 | **`billing-policy`** | **CI candidate** (the PR) |
 
 Acme's real refund/proration/trial rules are proprietary — the model can't guess
