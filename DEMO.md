@@ -66,6 +66,11 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
    `CONTINUOUS_JUDGE_MODEL` to override).
 4. **Deps:** `npm install`.
 
+> **Containerized worker (optional).** `docker-compose.yml` + `Tiltfile` run the
+> same worker as a production-like container pinned to queue `sha:<HEAD>`
+> ("Setup 2") — `tilt up` from the PR branch can stand in for `just ci-worker`.
+> The five flows below only need the host worker.
+
 ### Queue identity (why two workers)
 
 A worker only receives Tasks whose **queue string matches its own**, auto-derived:
