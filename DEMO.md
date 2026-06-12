@@ -3,8 +3,9 @@
 The canonical runbook for taking the Acme billing-support agent through
 Continuous end-to-end against the **dev** stack. It covers the four v2 surfaces —
 **eval** (A/B), **replay** (C), **shadow** (D), **monitor** (E) — across five
-runnable flows. Each flow is one `just` recipe (`just --list`); the
-replay/shadow/monitor recipes also drive the production traffic they need.
+runnable flows, then chains them into the detect → fix → verify loop (F). Each
+flow is one `just` recipe (`just --list`); the replay/shadow/monitor recipes
+also drive the production traffic they need.
 **[VALIDATION.md](VALIDATION.md)** is the validation log for these flows.
 
 A Python twin lives in `continuous-sample-python/DEMO.md` — same flows,
@@ -168,6 +169,44 @@ continuous monitor backfill <id> --from <1d ago>
 so backfill points cover the traffic just driven. **Expect:** backfill points
 within minutes (`continuous monitor show <id>` prints the series + alerts); the
 next scheduled point builds when the running period closes.
+
+### F — Close the loop (detect → fix → verify)
+
+The flows above each show one surface; F chains them into the product's core
+story. Three beats, after D/E have run:
+
+**1. A shadow's failures become a frozen benchmark.** On the shadow detail page
+(D), drill into the candidate arm's tasks; failing tasks offer **export as
+Replay Set** — a named set frozen from exactly those rows. Re-run any candidate
+against it:
+
+```bash
+continuous replay support-agent-ts --set <exported-set> --judge evals/support-judge.md
+```
+
+**Expect:** a Run over just the exported failures (`continuous replay-set list`
+shows the set's provenance); every later re-run against the same set adds a
+point to the benchmark series on its dashboard page — apples-to-apples across
+candidates.
+
+**2. A standing replay policy fires on the next PR.**
+
+```bash
+continuous replay-policy create pr-replay --agent support-agent-ts \
+  --window 7d --sample 50 --judge evals/support-judge.md
+```
+
+Every later PR whose config declares the agent now gets a replay Run at the PR
+head — half of the last week's recorded traffic re-run through the PR's
+variants, no config change, no tick. Open a PR (flow B) and **expect** an extra
+check-run + comment named `pr-replay` beside the two eval comments.
+`continuous replay-policy list` / `delete <id>` manage it.
+
+**3. The debugging drill-down.** On the monitor detail page (E), click a series
+point → its failure-shape and locus breakdowns → the point's task list → a
+task's steps viewer (the full trace). The same drill-down hangs off every Run,
+shadow arm, and replay — and failing tasks there offer **export as Replay Set**
+too, which is beat 1 again.
 
 ## Where to watch
 
