@@ -178,5 +178,6 @@ next scheduled point builds when the running period closes.
 
 ## Reset
 
-`just clean` — cancel + delete every run, shadow, monitor and replay set, and
-close the v3 PR (the org + GitHub App install are kept).
+`just clean` — cancel + delete every CLI run, shadow, monitor and replay set,
+and close the v3 PR (PR runs survive — the run list a CLI session reads is
+scoped to `source = cli`; the org + GitHub App install are kept).

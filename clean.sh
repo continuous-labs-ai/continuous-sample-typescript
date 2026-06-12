@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Reset this org's Continuous data so the demo runs against clean state.
 #
-# Cancels any in-flight shadows, stops active monitors, deletes every run,
-# shadow, monitor and replay set, and closes the pre-staged v3 PR. The org and
-# the GitHub App install are left intact — just clean data to look at.
+# Cancels any in-flight shadows, stops monitors, deletes every CLI run, shadow,
+# monitor and replay set, and closes the pre-staged v3 PR. PR runs survive — the
+# run list a CLI session reads is scoped to source=cli. The org and the GitHub
+# App install are left intact — just clean data to look at.
 #
 # This reuses the session `continuous login` already stored; it is deliberately
 # NOT a `continuous` CLI command, just a demo helper. Needs: `continuous login`
@@ -23,11 +24,11 @@ req() { curl -fsS -H "Authorization: Bearer $sealed" -H "X-Workspace-Id: $ws" "$
 # ids <listPath> <jsonKey>: print each row's id from a {"<key>":[{"id":...}]} body.
 ids() { req "$api/v1/$1" 2>/dev/null | python3 -c "import sys,json;print('\n'.join(r['id'] for r in json.load(sys.stdin).get('$2',[])))" 2>/dev/null || true; }
 
-echo "→ cancelling in-flight shadows, stopping monitors…"
+echo "→ cancelling in-flight shadows / stopping monitors…"
 for id in $(ids shadows shadows);   do req -o /dev/null -X POST "$api/v1/shadows/$id/cancel" || true; done
 for id in $(ids monitors monitors); do req -o /dev/null -X POST "$api/v1/monitors/$id/stop"  || true; done
 
-sleep 4   # let the workflow-driven cancels settle to terminal before deleting
+sleep 4   # let the cancels settle to terminal before deleting
 
 echo "→ deleting runs / shadows / monitors / replay sets…"
 # Status code from a DELETE without curl -f (409 = still in-flight, expected).

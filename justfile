@@ -113,7 +113,8 @@ login:
 workers:
     continuous workers list
 
-# Reset the demo org — cancel + delete all runs/shadows/monitors/replay sets and
-# close the v3 PR (keeps the org + install). Needs `continuous login` + gh + python3.
+# Reset the demo org — cancel + delete all CLI runs/shadows/monitors/replay sets
+# and close the v3 PR (PR runs survive; keeps the org + install). Needs
+# `continuous login` + gh + python3.
 clean:
     ./clean.sh
