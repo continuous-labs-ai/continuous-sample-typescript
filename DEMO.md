@@ -96,12 +96,16 @@ git checkout add-v3-billing-skill
 just ci-worker              # terminal 1 — queue sha:<pr_head>, variants v1/v2/v3
 just pr                     # terminal 2 — opens the v3 PR
 ```
-Continuous posts a check-run + a comment with an **eval × variant** table.
+Continuous posts a check-run and a comment **per declared eval** (two of each
+here), each comment carrying the eval's verdict table — one column per variant.
 - **auto** — `escalation · v3` runs automatically (relevance triage marks the
   irrelevant v1/v2 cells `skipped (triage)`).
-- **on-demand** — `billing-support` shows tick-to-dispatch checkboxes. Tick
-  `billing-support · v3` → it dispatches + judges → `✓ pass` (the skill earns its
-  place; v1/v2 `✗ fail`). `billing-support` (`block_pr: true`) gates the merge.
+- **on-demand** — `billing-support` renders a selection menu: one checkbox per
+  variant, an `all variants` shortcut, and **`▶ Run selected`**. Tick `v1`, `v2`
+  and `v3` (or `all variants`), **then tick `▶ Run selected`** — variant ticks
+  alone dispatch nothing, and an unticked variant doesn't run. The menu becomes
+  the verdict table: v3 `✓ pass`, v1/v2 `✗ fail` (the skill earns its place).
+  `billing-support` (`block_pr: true`) gates the merge.
 
 ### C — Replay (a Run over recorded traffic)
 
