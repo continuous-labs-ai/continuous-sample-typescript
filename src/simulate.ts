@@ -46,13 +46,12 @@ function parseArgs(argv: string[]): Options {
   return { total: count ?? 30, deadline: null, concurrency };
 }
 
-// Every 4th simulated user rates the answer — that thumbs rating rides the row
-// as its self_report (reason requires score).
+// Some rows carry the customer's own assessment (an in-app thumbs); most
+// ship unscored and rely on the platform's judging surfaces.
 function selfReport(i: number): { score?: number; reason?: string } {
-  if (i % 4 !== 0) return {};
-  return i % 12 === 0
-    ? { score: 0, reason: "user marked the answer unhelpful" }
-    : { score: 1, reason: "user marked the answer helpful" };
+  if (i % 6 === 5) return { score: 0, reason: "customer asked for a human" };
+  if (i % 3 === 0) return { score: 1, reason: "customer accepted the answer" };
+  return {};
 }
 
 export async function main(argv: string[]): Promise<void> {
@@ -87,7 +86,7 @@ export async function main(argv: string[]): Promise<void> {
       done++;
       if (report.score !== undefined) rated++;
       const ratedNote =
-        report.score !== undefined ? ` self_report=${report.score}` : "";
+        report.score !== undefined ? ` self=${report.score}` : "";
       console.log(
         `[${String(done).padStart(4)}] ${variant.padEnd(4)} ${String(durationMs).padStart(6)}ms${ratedNote}`,
       );
