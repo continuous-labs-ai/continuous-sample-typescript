@@ -1,15 +1,14 @@
 import { fileURLToPath } from "node:url";
-import { Client } from "@continuous/sdk";
-import { loadAgentName, loadVariants } from "./variants.js";
-import { runVariant } from "./worker.js";
+import { Client, builtinAnonymize, userText } from "@continuous/sdk";
+import { loadAgentName } from "./variants.js";
 
 const QUESTIONS = [
   "Can I get a refund? I paid 18 days ago and barely used it.",
-  "I upgraded to Pro this morning — am I being charged twice?",
+  "I upgraded to Pro this morning — am I being charged twice? Reach me at dana@example.com.",
   "How do I pause my plan for a couple of months?",
   "We dropped 3 seats last week. Do we get money back?",
   "Is there a free trial, and does it need a card?",
-  "Can I stack my coupon with the annual discount?",
+  "Can I stack my coupon with the annual discount? Call me at +1 415 555 0142.",
   "If I cancel now do I lose access immediately?",
   "I bought annual two weeks ago and want out. Refund?",
 ];
@@ -46,24 +45,14 @@ function parseArgs(argv: string[]): Options {
   return { total: count ?? 30, deadline: null, concurrency };
 }
 
-// Some rows carry the customer's own assessment (an in-app thumbs); most
-// ship unscored and rely on the platform's judging surfaces.
-function selfReport(i: number): { score?: number; reason?: string } {
-  if (i % 6 === 5) return { score: 0, reason: "customer asked for a human" };
-  if (i % 3 === 0) return { score: 1, reason: "customer accepted the answer" };
-  return {};
-}
-
 export async function main(argv: string[]): Promise<void> {
   const { total, deadline, concurrency } = parseArgs(argv);
   const agent = loadAgentName();
-  // Production serves the baseline — the first declared variant (v1 on main).
-  const [variant, spec] = [...loadVariants().entries()][0];
-  const client = new Client();
+  // Capture is input-only and variant-agnostic; the SDK scrubs PII before enqueue.
+  const client = new Client(undefined, { anonymize: builtinAnonymize });
 
   let nextI = 0;
   let done = 0;
-  let rated = 0;
 
   const take = (): number | null => {
     if (deadline !== null && Date.now() >= deadline) return null;
@@ -73,23 +62,9 @@ export async function main(argv: string[]): Promise<void> {
 
   async function pump(): Promise<void> {
     for (let i = take(); i !== null; i = take()) {
-      const question = QUESTIONS[i % QUESTIONS.length];
-      const started = Date.now();
-      const { steps, usage } = await runVariant(spec, question);
-      const durationMs = Date.now() - started;
-      const report = selfReport(i);
-      client.reportTask(agent, steps, {
-        duration_ms: durationMs,
-        usage,
-        ...report,
-      });
+      client.record(agent, [userText(QUESTIONS[i % QUESTIONS.length])]);
       done++;
-      if (report.score !== undefined) rated++;
-      const ratedNote =
-        report.score !== undefined ? ` self=${report.score}` : "";
-      console.log(
-        `[${String(done).padStart(4)}] ${variant.padEnd(4)} ${String(durationMs).padStart(6)}ms${ratedNote}`,
-      );
+      console.log(`[${String(done).padStart(4)}] recorded`);
     }
   }
 
@@ -101,9 +76,7 @@ export async function main(argv: string[]): Promise<void> {
     await client.close();
   }
 
-  console.log(
-    `\nsent ${done} tasks — variant ${variant} — ${rated} self-reported`,
-  );
+  console.log(`\nrecorded ${done} inputs — agent ${agent}`);
 }
 
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
