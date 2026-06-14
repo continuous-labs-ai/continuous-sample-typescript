@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "worker": "tsx src/worker.ts",
+    "worker": "NODE_OPTIONS=--preserve-symlinks tsx src/worker.ts",
     "simulate": "tsx src/simulate.ts"
   },
   "dependencies": {
