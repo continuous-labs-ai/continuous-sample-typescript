@@ -126,10 +126,9 @@ continuous replay support-agent-ts --window 24h --judge evals/support-judge.md
 ```
 
 — a replay Run drawing the last day of the agent's recorded production traffic
-(newest first), re-run through every declared variant. Each row's reference
-outcome is what the live agent actually did. **Expect:** a Run over the drawn
-rows per variant; `continuous runs show <run_id>` lists each task with a
-worker-judged verdict.
+(newest first), re-running each row's recorded INPUT through every declared
+variant. **Expect:** a Run over the drawn rows per variant; `continuous runs
+show <run_id>` lists each task with a worker-judged verdict.
 
 **Frozen set — the re-runnable benchmark:**
 
@@ -149,11 +148,12 @@ shows each set's provenance.
 just worker                 # terminal 1 — required; it executes the mirrors
 just shadow                 # terminal 2 — samples v1 traffic, mirrors through v2, prints the paired report
 ```
-**Shadow** is *try-before-you-buy*: it samples real v1 (baseline) traffic, replays
-each sampled input through v2 **out of band** (no user sees it), and scores both
-arms on the worker against one rubric. **Expect:** baseline vs candidate arms + a
-**paired** stat (`candidate_wins`, `mean_score_delta > 0`). Mirrors run the real
-agent (~minutes), so re-run `continuous shadow show <id>` as the candidate arm fills.
+**Shadow** is *try-before-you-buy*: it samples real production traffic, mirrors
+each sampled input through the candidate variant **out of band** (no user sees
+it), and scores it on the worker against one rubric. The sampled input is the
+anonymized recorded input; the mirror runs against mocked tools. **Expect:** a
+per-variant pass-rate over the mirrored rows. Mirrors run the real agent
+(~minutes), so re-run `continuous shadow show <id>` as the rows fill.
 
 ### E — Monitor (the held-agent series)
 
@@ -220,9 +220,14 @@ too, which is beat 1 again.
   `continuous monitor show <id>`.
 - **Replay sets:** `continuous replay-set list` (and `show <id>` for the frozen rows).
 - **Workers:** `just workers` (subscriptions + their queue identity).
-- **Cost:** the worker reports each run's token usage; the platform prices it per
-  model (a dated snapshot resolves to its family rate) into the cost block shown
-  beside latency and pass-rate on the run page.
+- **Cost:** the worker reports each run's token usage (eval, replay, shadow,
+  monitor — never production capture, which is input-only); the platform prices
+  it per model (a dated snapshot resolves to its family rate) into the cost block
+  shown beside latency and pass-rate on the run page.
+
+> Production capture (`just simulate` / `just traffic`) records the agent's
+> INPUT only — `client.record(agent, input)` — and the SDK anonymizes PII from
+> the input before it ships. No output, usage, or score is captured live.
 
 ## Reset
 

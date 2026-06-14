@@ -38,16 +38,20 @@ scored by [`evals/support-judge.md`](evals/support-judge.md)) is built so **v1 <
 [`src/worker.ts`](src/worker.ts) is the whole integration:
 
 ```ts
-const worker = new ManagedAgentWorker({ agent: "support-agent-ts", agentFactory });
-startWorker(worker); // one subscription serves every declared variant
+const worker = new ManagedAgentWorker({
+  agent: "support-agent-ts",
+  managedAgents: { v1: optsV1, v2: optsV2 },
+});
+startWorker(worker); // one subscription advertises variants v1,v2
 ```
 
-The factory reads `task.variant`, composes that variant's
-`model × prompt × skill` into the Agent SDK `Options`, runs the Claude Agent SDK,
-and returns the steps. The SDK's in-process rubric judge then scores them
-against `evals/support-judge.md` — judging happens on the worker, against your
-own judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back to
-`ANTHROPIC_API_KEY`), before the result is reported.
+You supply `managedAgents` — one Agent SDK `Options` per variant (its composed
+`model × prompt × skill`). The adapter picks `managedAgents[task.variant]`, runs
+it against `task.payload.input`, converts the transcript via `toOpenResponses`,
+harvests usage, and returns the steps. The SDK's in-process rubric judge then
+scores them against `evals/support-judge.md` — judging happens on the worker,
+against your own judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back
+to `ANTHROPIC_API_KEY`), before the result is reported.
 
 ## Setup
 
@@ -113,5 +117,12 @@ src/                          # the worker + production-traffic simulator
   resolves `@continuous/sdk` from the monorepo via a relative `file:` path
   (`../continuous/sdk/typescript`) — clone this repo next to the `continuous`
   monorepo. Once published this becomes a plain `@continuous/sdk` dependency.
+- `ManagedAgentWorker` is imported from the `@continuous/sdk/anthropic` subpath
+  (same package, no extra dependency); the core worker entry point `startWorker`
+  comes from `@continuous/sdk`.
+- Production capture is input-only: [`src/simulate.ts`](src/simulate.ts) calls
+  `client.record(agent, input)` with the recorded input (no output, usage, or
+  score), and the SDK's `builtinAnonymize` scrubs PII from the input's text
+  leaves before it ships.
 - Pin `@anthropic-ai/claude-agent-sdk` — its 0.x API moves between minor
   versions.
