@@ -54,8 +54,8 @@ pr:
     gh pr create --base main --head add-v3-billing-skill \
       --title "Add v3: billing-policy skill" -F .github/PR_BODY_v3.md
 
-# C — replay: launch a replay Run over a trailing window of recorded production
-# traffic — each row's reference outcome is what the live agent actually did.
+# C — replay: launch a replay Run that re-runs recorded production INPUT over a
+# trailing window, judging each fresh run against the rubric.
 # Drives traffic first so the window has rows; needs `just worker`.
 replay window="24h" traffic="24":
     #!/usr/bin/env bash
