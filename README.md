@@ -49,7 +49,8 @@ You supply `managedAgents` — one Agent SDK `Options` per variant (its composed
 `model × prompt × skill`). The adapter picks `managedAgents[task.variant]`, runs
 it against `task.payload.input`, converts the transcript via `toOpenResponses`,
 harvests usage, and returns the steps. The SDK's in-process rubric judge then
-scores them against `evals/support-judge.md` — judging happens on the worker,
+scores them against `evals/support-judge.md` — whose `[judge].model` declares the
+judge model (Anthropic-only, `anthropic/<model>`). Judging happens on the worker,
 against your own judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back
 to `ANTHROPIC_API_KEY`), before the result is reported.
 

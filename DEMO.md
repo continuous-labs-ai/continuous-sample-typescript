@@ -62,8 +62,8 @@ adds v3 + the skill; opening its PR *is* the CI flow (B).
    ```
    `ANTHROPIC_API_KEY` does double duty: the Claude Agent SDK runs the variants
    with it, and the Continuous SDK's worker-side rubric judge falls back to it
-   (`CONTINUOUS_JUDGE_API_KEY` / `CONTINUOUS_JUDGE_BASE_URL` /
-   `CONTINUOUS_JUDGE_MODEL` to override).
+   (`CONTINUOUS_JUDGE_API_KEY` / `CONTINUOUS_JUDGE_BASE_URL` override the judge
+   key / endpoint; the judge model comes from each rubric's `[judge].model`).
 4. **Deps:** `npm install`.
 
 > **Containerized worker (optional).** `docker-compose.yml` + `Tiltfile` run the
