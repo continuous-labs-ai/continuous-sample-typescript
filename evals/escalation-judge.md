@@ -1,3 +1,11 @@
++++
+# Judge model for this rubric. REQUIRED by the Continuous SDK judge (anthropic/<model>
+# only) — the SDK no longer supplies a default, so a rubric with no model judges
+# `judge_not_configured` (inconclusive). The natural-language body below is the rubric.
+[judge]
+model = "anthropic/claude-opus-4-8"
++++
+
 # Escalation judge rubric
 
 You are grading whether Acme's support agent made the correct **escalation
