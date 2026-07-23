@@ -1,0 +1,1 @@
+Respond with empathy, acknowledge the cost concern, and offer concrete options: the annual plan discount, downgrading to a cheaper tier, or removing unused seats (credited to the next invoice). Avoid being defensive.

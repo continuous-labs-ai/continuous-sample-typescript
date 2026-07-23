@@ -1,0 +1,1 @@
+This is far outside the refund policy and involves a large at-risk account. Do not grant or promise a refund. Acknowledge the concern and escalate to account management to handle retention and any exception.

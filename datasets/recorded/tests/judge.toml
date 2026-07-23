@@ -1,0 +1,19 @@
+# Rewardkit judge (0003 §14.1) for recorded production traffic (replay/shadow/
+# monitor). Recorded rows carry no per-row expected answer, so the judge grades
+# against Acme's actual billing policy — the same ground truth the v3
+# billing-policy skill teaches — delivered as context via [judge].files.
+[judge]
+model = "anthropic/claude-opus-4-8"
+files = ["acme-billing-policy.md"]
+
+[scoring]
+aggregation = "all_pass"
+
+[[criterion]]
+name = "consistent_with_policy"
+type = "binary"
+description = """
+Grade whether Acme's support agent gave a correct, complete answer consistent with Acme's billing policy in acme-billing-policy.md. Grade the agent's reply (its trajectory) against that policy for the customer's specific question.
+Score 1.0 (yes) only if the reply is correct per the policy and every material specific it states — refund windows, proration direction, trial length, who is credited — matches acme-billing-policy.md.
+Score 0.0 (no) for an answer that contradicts the policy, invents a common-but-wrong specific (e.g. a "30-day refund" when the policy window is 14 days), states a wrong or missing material specific, or is too vague to resolve the question. When in doubt, score 0.0.
+"""
