@@ -1,0 +1,6 @@
+# Two-stage reward reduction (0004 §8.3). pass_rate over an all_pass binary judge
+# makes the headline the fraction of tasks the agent got right — the demo's
+# "success rate". Both stages take the same mode enum: mean|min|max|median|pass_rate.
+[aggregation]
+trials = "pass_rate"
+tasks = "pass_rate"

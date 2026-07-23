@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { Client, builtinAnonymize, userText } from "@continuous/sdk";
+import { Client, builtinAnonymize } from "@continuous/sdk";
 import { loadAgentName } from "./variants.js";
 
 const QUESTIONS = [
@@ -62,7 +62,7 @@ export async function main(argv: string[]): Promise<void> {
 
   async function pump(): Promise<void> {
     for (let i = take(); i !== null; i = take()) {
-      client.record(agent, [userText(QUESTIONS[i % QUESTIONS.length])]);
+      client.record(agent, QUESTIONS[i % QUESTIONS.length]);
       done++;
       console.log(`[${String(done).padStart(4)}] recorded`);
     }

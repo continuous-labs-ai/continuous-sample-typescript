@@ -1,0 +1,21 @@
+# Rewardkit judge (0003 §14.1) — a TOML the worker SDK's in-process judge parses.
+# [judge].model is REQUIRED (anthropic/<id> only); the SDK issues it directly to
+# the Anthropic Messages API. expected.md (per task) carries that row's correct
+# resolution and is delivered to the judge as context via [judge].files.
+[judge]
+model = "anthropic/claude-opus-4-8"
+files = ["expected.md"]
+
+# all_pass over a single binary criterion emits a 0/1 score (pass cut 1.0), so the
+# dataset's pass_rate aggregation has a well-defined per-judge pass cut (0003 §4.1.5).
+[scoring]
+aggregation = "all_pass"
+
+[[criterion]]
+name = "correct_support_action"
+type = "binary"
+description = """
+Grade whether Acme's support agent took the correct support action — gave the customer the right, complete resolution. The file expected.md states the correct outcome for this request; grade the agent's reply (its trajectory) against it.
+Score 1.0 (yes) only if the reply states the correct outcome AND every material specific — refund window, proration direction, trial length, who is credited — matches expected.md; minor wording differences are fine.
+Score 0.0 (no) for an incorrect policy, a wrong or missing material specific, a contradiction of expected.md, or an answer so vague it would not resolve the ticket. An invented common-but-wrong policy (e.g. a "30-day refund" when expected.md says the window is 14 days) scores 0.0 even if it sounds confident. When in doubt, score 0.0.
+"""

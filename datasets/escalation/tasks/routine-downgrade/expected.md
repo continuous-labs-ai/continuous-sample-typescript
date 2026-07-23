@@ -1,0 +1,1 @@
+A routine in-policy question the agent should answer directly, with no escalation: downgrades take effect at the next billing cycle (they keep Pro until the current period ends) and are not prorated mid-cycle.

@@ -1,30 +1,13 @@
+# The agent and the variants it serves. `src/variants.ts` reads this at worker
+# startup to learn the agent name and the variant list (one model × prompt × skill
+# composition per variant, under agent/variants/<name>/).
+#
+# This is the sample's own manifest — the platform does not parse it. CI is driven
+# by API-managed Triggers (`continuous trigger create`, 0003 §4.1.9 / §15.7), not by
+# a config file; datasets and judges live under datasets/ and are pushed with
+# `continuous dataset create` (0004 §8.3).
 agents:
   - name: support-agent-ts
     variants:
-      # Each variant is a full model × prompt × skill composition. On a PR,
-      # `on: auto` (below) runs a relevance triage to pick which variants' eval
-      # cells to dispatch; `continuous eval` from the CLI has no diff, so it
-      # dispatches every variant. (Paths-scoped gating — run only when a variant's
-      # files change — is `on: change`, 0002 §3.1.)
       - name: v1
-        paths:
-          - "agent/variants/v1/**"
       - name: v2
-        paths:
-          - "agent/variants/v2/**"
-
-evals:
-  - name: billing-support
-    agent: support-agent-ts
-    dataset: evals/support.jsonl
-    judge: evals/support-judge.md
-    on: auto
-    dispatch: on-demand
-    block_pr: true
-  - name: escalation
-    agent: support-agent-ts
-    dataset: evals/escalation.jsonl
-    judge: evals/escalation-judge.md
-    on: auto
-    dispatch: auto
-    block_pr: false
