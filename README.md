@@ -88,8 +88,7 @@ npm run worker
 ## Demos
 
 The canonical runbook — prerequisites, the cast (v1/v2/v3), and the five flows
-packaged as `just` recipes (`just --list`) — lives in **[DEMO.md](DEMO.md)**;
-**[VALIDATION.md](VALIDATION.md)** is the validation log. The current CLI has one
+packaged as `just` recipes (`just --list`) — lives in **[DEMO.md](DEMO.md)**. The current CLI has one
 launch verb: `continuous run --dataset-id <ds>` runs a variant over a Dataset, and
 the surface is derived from the Dataset's kind (`static` → eval, `historical` →
 replay, `live` → shadow). So each flow is `continuous dataset create <dir>` then

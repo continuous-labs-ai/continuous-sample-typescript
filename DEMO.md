@@ -5,7 +5,6 @@ end-to-end. It covers the four v2 surfaces — **eval** (A/B), **replay** (C),
 **shadow** (D), **monitor** (E) — across five runnable flows, then chains them into
 the detect → fix → verify loop (F). Each flow is one `just` recipe (`just --list`);
 the replay/shadow/monitor recipes also drive the production traffic they need.
-**[VALIDATION.md](VALIDATION.md)** is the validation log for these flows.
 
 A Python twin lives in `continuous-sample-python/DEMO.md` — same flows, `uv`
 instead of `npm`.
