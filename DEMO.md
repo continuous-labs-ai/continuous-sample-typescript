@@ -5,7 +5,6 @@ end-to-end. It covers the four v2 surfaces — **eval** (A/B), **replay** (C),
 **shadow** (D), **monitor** (E) — across five runnable flows, then chains them into
 the detect → fix → verify loop (F). Each flow is one `just` recipe (`just --list`);
 the replay/shadow/monitor recipes also drive the production traffic they need.
-**[VALIDATION.md](VALIDATION.md)** is the validation log for these flows.
 
 A Python twin lives in `continuous-sample-python/DEMO.md` — same flows, `uv`
 instead of `npm`.
@@ -27,13 +26,6 @@ A **Dataset is a directory**, not a `.jsonl`: a top-level `dataset.toml`
 `[judge].model` is the judge model — `anthropic/<id>`, 0003 §14.1), and, for a
 `static` set, `tasks/<task>/{instruction.md, task.toml, expected.md}`. This repo's
 sets live under [`datasets/`](datasets).
-
-> **Surface availability (ADR-0011).** A **deployed** bundle (`development`,
-> `production`) serves only the **Environment** surface (Simulators/Simulations/
-> traces); the eval, replay, shadow, monitor, dataset, and trigger routes are not
-> registered there and return 404. The five flows below therefore run against a
-> stack that registers the full surface (a `local` bundle). Point
-> `CONTINUOUS_API_URL` / `continuous auth login --api-url` at such a stack.
 
 ## The cast (variants)
 
@@ -64,14 +56,13 @@ adds v3 + the skill; a Trigger over the PR _is_ the CI flow (B).
 
 ### Local
 
-1. **`continuous` CLI** — build from the monorepo and put it on `PATH`:
+1. **`continuous` CLI**:
    ```bash
-   go build -o continuous ./cli/cmd/continuous   # in a checkout of continuous-labs-ai/continuous
+   curl -fsSL https://app.continuouslabs.ai/install.sh | sh
    ```
-2. **Operator auth** (browser handshake) — point it at the stack that serves the
-   full surface (see the ADR-0011 note above):
+2. **Operator auth** (browser handshake):
    ```bash
-   CONTINUOUS_API_URL=<api-url> CONTINUOUS_APP_URL=<app-url> continuous auth login
+   continuous auth login
    ```
 3. **`.env`** in this repo (auto-loaded by `just`):
    ```
@@ -83,7 +74,8 @@ adds v3 + the skill; a Trigger over the PR _is_ the CI flow (B).
    with it, and the Continuous SDK's worker-side rubric judge falls back to it
    (`CONTINUOUS_JUDGE_API_KEY` / `CONTINUOUS_JUDGE_BASE_URL` override the judge key /
    endpoint; the judge **model** comes from each rubric's `[judge].model`).
-4. **Deps:** `npm install`, plus `gh` and `jq` on `PATH` (the recipes capture
+4. **Deps:** complete [README setup](README.md#setup), including the sibling SDK
+   pnpm build and `npm ci`; put `gh` and `jq` on `PATH` (the recipes capture
    `ds_`/`job_` ids from `--json` output with `jq`).
 
 ### Queue identity (why two workers)
