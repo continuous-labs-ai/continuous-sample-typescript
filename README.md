@@ -91,7 +91,10 @@ cp .env.example .env                    # replace the placeholders before use
 
 > The Claude Agent SDK bundles and spawns a native Claude Code engine as a
 > subprocess, so each worker needs `ANTHROPIC_API_KEY` and the ability to spawn
-> a child process. The Continuous SDK itself is a thin HTTP client.
+> a child process. The engine runs with `bypassPermissions`, which **refuses to
+> run as root unless `IS_SANDBOX=1`** — so any root/container/CI host must set it
+> (the `docker-compose.yml` worker already does). The Continuous SDK itself is a
+> thin HTTP client.
 
 Run the worker from the repo root (the Agent SDK resolves `.claude/skills`
 relative to it):

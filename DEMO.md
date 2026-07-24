@@ -78,6 +78,11 @@ adds v3 + the skill; a Trigger over the PR _is_ the CI flow (B).
    pnpm build and `npm ci`; put `gh` and `jq` on `PATH` (the recipes capture
    `ds_`/`job_` ids from `--json` output with `jq`).
 
+> **Worker host.** The Claude Agent SDK spawns the bundled Claude Code engine
+> with `bypassPermissions`, which refuses to run as root unless `IS_SANDBOX=1`.
+> `just worker` under your own login is fine; any root/container/CI host must set
+> it (the `docker-compose.yml` worker already does).
+
 ### Queue identity (why two workers)
 
 A worker only receives Trials whose **queue string matches its own**, auto-derived:
