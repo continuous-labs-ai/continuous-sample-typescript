@@ -59,7 +59,8 @@ judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back to
 ## Setup
 
 ```bash
-# 1. Install the Continuous CLI (Go) and log in.
+# 1. Install the Continuous CLI and log in.
+curl -fsSL https://app.continuouslabs.ai/install.sh | sh
 continuous auth login
 
 # 2. Install dependencies.

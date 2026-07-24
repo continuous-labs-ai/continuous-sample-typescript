@@ -21,6 +21,4 @@ flows, `uv` instead of `npm`.
   Dataset's kind), Harbor Dataset **directories** (`dataset.toml` + rewardkit
   `tests/judge.toml` + `tasks/<t>/…`) under `datasets/`, API-managed **Triggers**
   for CI (config-file triggers retired), and `continuous auth login` / `worker list`
-  / `job get` / `monitor get`. All five flows pending live re-validation against a
-  full-surface stack (the eval/replay/shadow/monitor surfaces are Environment-hidden
-  on deployed bundles — ADR-0011).
+  / `job get` / `monitor get`. All five flows are pending live re-validation.

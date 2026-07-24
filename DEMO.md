@@ -28,13 +28,6 @@ A **Dataset is a directory**, not a `.jsonl`: a top-level `dataset.toml`
 `static` set, `tasks/<task>/{instruction.md, task.toml, expected.md}`. This repo's
 sets live under [`datasets/`](datasets).
 
-> **Surface availability (ADR-0011).** A **deployed** bundle (`development`,
-> `production`) serves only the **Environment** surface (Simulators/Simulations/
-> traces); the eval, replay, shadow, monitor, dataset, and trigger routes are not
-> registered there and return 404. The five flows below therefore run against a
-> stack that registers the full surface (a `local` bundle). Point
-> `CONTINUOUS_API_URL` / `continuous auth login --api-url` at such a stack.
-
 ## The cast (variants)
 
 The shipped unit is a full **model × prompt × skill** composition, not a model.
@@ -64,14 +57,13 @@ adds v3 + the skill; a Trigger over the PR _is_ the CI flow (B).
 
 ### Local
 
-1. **`continuous` CLI** — build from the monorepo and put it on `PATH`:
+1. **`continuous` CLI**:
    ```bash
-   go build -o continuous ./cli/cmd/continuous   # in a checkout of continuous-labs-ai/continuous
+   curl -fsSL https://app.continuouslabs.ai/install.sh | sh
    ```
-2. **Operator auth** (browser handshake) — point it at the stack that serves the
-   full surface (see the ADR-0011 note above):
+2. **Operator auth** (browser handshake):
    ```bash
-   CONTINUOUS_API_URL=<api-url> CONTINUOUS_APP_URL=<app-url> continuous auth login
+   continuous auth login
    ```
 3. **`.env`** in this repo (auto-loaded by `just`):
    ```
