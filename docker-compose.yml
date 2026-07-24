@@ -12,6 +12,10 @@ services:
     environment:
       # The SDK authenticates with the worker key via CONTINUOUS_API_KEY (.env).
       CONTINUOUS_API_KEY: ${CONTINUOUS_API_KEY:-}
+      # The Agent SDK spawns the bundled Claude Code engine with
+      # bypassPermissions, which refuses to run as root unless IS_SANDBOX=1. This
+      # container runs as root, so set it (harmless on a non-root host).
+      IS_SANDBOX: "1"
       # Preview/production deploy: set to the PR head SHA for the CI demo so the
       # worker lands on queue sha:<head_sha>. Tilt sets this from `git_sha`.
       CONTINUOUS_GIT_SHA: ${CONTINUOUS_GIT_SHA:?set CONTINUOUS_GIT_SHA to the deploy/PR head SHA}
