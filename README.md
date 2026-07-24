@@ -58,18 +58,35 @@ judge model endpoint (`CONTINUOUS_JUDGE_API_KEY`, falling back to
 
 ## Setup
 
+Keep the unpublished SDK and this sample in sibling directories:
+
+```text
+workspace/
+├── continuous/
+└── continuous-sample-typescript/
+```
+
 ```bash
 # 1. Install the Continuous CLI and log in.
 curl -fsSL https://app.continuouslabs.ai/install.sh | sh
 continuous auth login
 
-# 2. Install dependencies.
-npm install
+# 2. Install the SDK with its declared pnpm version. Its prepare script builds it.
+cd ../continuous/sdk/typescript
+pnpm install --frozen-lockfile
 
-# 3. Two keys in the environment:
+# 3. Install and check the sample.
+cd ../../../continuous-sample-typescript
+npm ci
+npm run check
+
+# 4. Configure the worker.
 export CONTINUOUS_API_KEY=ck_...        # worker key — minted in the dashboard (Admin → Worker API keys)
 export CONTINUOUS_API_URL=https://api.continuouslabs.ai   # or your local/dev stack
 export ANTHROPIC_API_KEY=sk-ant-...     # the Claude Agent SDK calls Anthropic
+
+# Docker Compose, Tilt, and just load the same values from .env.
+cp .env.example .env                    # replace the placeholders before use
 ```
 
 > The Claude Agent SDK bundles and spawns a native Claude Code engine as a
@@ -82,6 +99,20 @@ relative to it):
 ```bash
 npm run worker
 ```
+
+Node.js 20 or newer, npm, and pnpm 11.12.0 are required. Until
+`@continuous/sdk` is published, both host and container builds intentionally
+resolve it from `../continuous/sdk/typescript`.
+
+To build the container, run from this repository with the same sibling layout:
+
+```bash
+CONTINUOUS_GIT_SHA=$(git rev-parse HEAD) docker compose build worker
+CONTINUOUS_GIT_SHA=$(git rev-parse HEAD) docker compose up worker
+```
+
+Tilt uses the same parent build context. Run `tilt up` from this repository; it
+defaults `CONTINUOUS_GIT_SHA` to the checked-out commit.
 
 ---
 
@@ -129,9 +160,7 @@ src/                          # the worker + production-traffic simulator
 ## Notes
 
 - The Continuous SDKs aren't on npm yet, so [`package.json`](package.json)
-  resolves `@continuous/sdk` from the monorepo via a relative `file:` path
-  (`../continuous/sdk/typescript`) — clone this repo next to the `continuous`
-  monorepo. Once published this becomes a plain `@continuous/sdk` dependency.
+  resolves `@continuous/sdk` from the sibling Continuous checkout.
 - `ManagedAgentWorker` is imported from the `@continuous/sdk/anthropic` subpath
   (same package, no extra dependency); the core worker entry point `startWorker`
   comes from `@continuous/sdk`.

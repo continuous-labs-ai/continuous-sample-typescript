@@ -12,7 +12,7 @@
 # Dataset, never the command.
 #
 # Prereqs (see DEMO.md): `continuous`, `gh`, and `jq` on PATH, `continuous auth login`
-# done, `npm install`, and a .env with CONTINUOUS_API_KEY / CONTINUOUS_API_URL /
+# done, the README's sibling-SDK setup, and a .env with CONTINUOUS_API_KEY / CONTINUOUS_API_URL /
 # ANTHROPIC_API_KEY (auto-loaded; ANTHROPIC_API_KEY also feeds the SDK's rubric judge
 # unless CONTINUOUS_JUDGE_API_KEY / _BASE_URL override it — the judge MODEL comes from
 # each rubric's [judge].model, 0003 §14.1). Keep `just worker` running in one terminal

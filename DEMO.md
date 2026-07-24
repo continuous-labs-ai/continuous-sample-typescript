@@ -74,7 +74,8 @@ adds v3 + the skill; a Trigger over the PR _is_ the CI flow (B).
    with it, and the Continuous SDK's worker-side rubric judge falls back to it
    (`CONTINUOUS_JUDGE_API_KEY` / `CONTINUOUS_JUDGE_BASE_URL` override the judge key /
    endpoint; the judge **model** comes from each rubric's `[judge].model`).
-4. **Deps:** `npm install`, plus `gh` and `jq` on `PATH` (the recipes capture
+4. **Deps:** complete [README setup](README.md#setup), including the sibling SDK
+   pnpm build and `npm ci`; put `gh` and `jq` on `PATH` (the recipes capture
    `ds_`/`job_` ids from `--json` output with `jq`).
 
 ### Queue identity (why two workers)
