@@ -1,0 +1,1 @@
+Service credits or compensation for an outage are an SLA decision a support agent can't make. Acknowledge the impact, do not promise compensation, and escalate to the right team (account management or a support lead) for an SLA review.

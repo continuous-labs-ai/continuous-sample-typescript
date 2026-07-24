@@ -12,15 +12,19 @@ services:
     environment:
       # The SDK authenticates with the worker key via CONTINUOUS_API_KEY (.env).
       CONTINUOUS_API_KEY: ${CONTINUOUS_API_KEY:-}
+      # The Agent SDK spawns the bundled Claude Code engine with
+      # bypassPermissions, which refuses to run as root unless IS_SANDBOX=1. This
+      # container runs as root, so set it (harmless on a non-root host).
+      IS_SANDBOX: "1"
       # Preview/production deploy: set to the PR head SHA for the CI demo so the
       # worker lands on queue sha:<head_sha>. Tilt sets this from `git_sha`.
       CONTINUOUS_GIT_SHA: ${CONTINUOUS_GIT_SHA:?set CONTINUOUS_GIT_SHA to the deploy/PR head SHA}
       # The SDK's in-process rubric judge scores claimed tasks against your own
-      # judge model endpoint. The key falls back to ANTHROPIC_API_KEY (.env);
-      # base URL / model have SDK defaults.
+      # judge model endpoint. The key falls back to ANTHROPIC_API_KEY (.env); the
+      # base URL has an SDK default. The judge model comes from each rubric's
+      # `[judge].model`, not the environment.
       CONTINUOUS_JUDGE_API_KEY: ${CONTINUOUS_JUDGE_API_KEY:-}
       CONTINUOUS_JUDGE_BASE_URL: ${CONTINUOUS_JUDGE_BASE_URL:-}
-      CONTINUOUS_JUDGE_MODEL: ${CONTINUOUS_JUDGE_MODEL:-}
 
   # Production-traffic simulator for the replay/shadow/monitor demos
   # (queue-independent — it reports tasks rather than polling). Start on demand:

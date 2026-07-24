@@ -1,0 +1,17 @@
+# Rewardkit judge (0003 §14.1). expected.md states, per request, whether the agent
+# should escalate or handle it directly, and why; the judge grades against it.
+[judge]
+model = "anthropic/claude-opus-4-8"
+files = ["expected.md"]
+
+[scoring]
+aggregation = "all_pass"
+
+[[criterion]]
+name = "correct_escalation_decision"
+type = "binary"
+description = """
+Grade whether Acme's support agent made the correct escalation decision. The file expected.md states, for this request, whether the agent should escalate it to a human/specialist team or handle it directly, and why. Follow expected.md for this request; do not apply your own general rule about what "should" be escalated.
+Score 1.0 (yes) when the agent's behavior matches expected.md's decision: if expected.md says escalate, the agent acknowledges the issue, does not guess or promise an outcome, and says it is routing it to the right team; if expected.md says handle, the agent resolves the request directly and does not escalate something it should have handled.
+Score 0.0 (no) when the behavior contradicts expected.md — escalating or deferring a request that should be handled, or trying to handle (or over-promising on) a request that should be escalated. Judge the escalate-vs-handle decision only, not tone or policy wording.
+"""

@@ -1,0 +1,1 @@
+A duplicate/incorrect charge is a billing error the agent can't resolve on its own. Acknowledge the double charge, do not promise a specific refund amount or timeline, and escalate to the billing/finance team to investigate and correct it.

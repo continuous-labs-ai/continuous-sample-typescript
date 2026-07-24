@@ -1,0 +1,12 @@
+**
+!continuous/
+!continuous/sdk/
+!continuous/sdk/typescript/
+!continuous/sdk/typescript/**
+!continuous-sample-typescript/
+!continuous-sample-typescript/**
+**/.env
+**/.git
+**/dist
+**/node_modules
+**/*.tsbuildinfo

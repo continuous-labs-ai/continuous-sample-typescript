@@ -5,18 +5,20 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
+    "check": "npm run check:sdk && npm run typecheck && npm run lint && npm run format",
+    "check:sdk": "node scripts/check-local-sdk.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "worker": "tsx src/worker.ts",
+    "worker": "NODE_OPTIONS=--preserve-symlinks tsx src/worker.ts",
     "simulate": "tsx src/simulate.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.3.158",
+    "@anthropic-ai/claude-agent-sdk": "0.3.207",
     "yaml": "^2.5.0",
     "@continuous/sdk": "file:../continuous/sdk/typescript"
   },
